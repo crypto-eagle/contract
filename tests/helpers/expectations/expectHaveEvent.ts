@@ -1,0 +1,29 @@
+import { SandboxContract, SendMessageResult, TreasuryContract } from '@ton/sandbox';
+import { MainContract } from '../../../build/MainContract/tact_MainContract';
+import { EventMessageSent } from '@ton/sandbox/dist/event/Event';
+
+export const expectNotHaveEvents = (result: SendMessageResult) => {
+    expect(result.events.length).toBeFalsy();
+};
+
+export const expectHaveFailEvents = (result: SendMessageResult) => {
+    expect(result.events.length).toBe(2);
+
+    const events = result.events as EventMessageSent[];
+
+    const notBouncedEvent = events.find(e => !e.bounced);
+    const bouncedEvent = events.find(e => e.bounced);
+
+    expect(notBouncedEvent).toBeTruthy();
+    expect(bouncedEvent).toBeTruthy();
+};
+
+export const expectHaveOnlyOneEvent = (contract: SandboxContract<MainContract>, deployer: SandboxContract<TreasuryContract>, result: SendMessageResult, value: bigint) => {
+    expect(result.events.length).toBe(1);
+
+    const msg = result.events[0] as EventMessageSent;
+
+    expect(msg.value).toBe(value);
+    expect(JSON.stringify(msg.from)).toBe(JSON.stringify(deployer.address));
+    expect(JSON.stringify(msg.to)).toBe(JSON.stringify(contract.address));
+};

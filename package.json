@@ -4,10 +4,11 @@
     "scripts": {
         "start": "blueprint run",
         "build": "blueprint build",
+        "bp-test": "blueprint build & blueprint test",
         "test": "jest --verbose"
     },
     "devDependencies": {
-        "@ton/blueprint": "^0.16.0",
+        "@ton/blueprint": "^0.18.0",
         "@ton/sandbox": "^0.15.0",
         "@ton/test-utils": "^0.4.2",
         "@types/jest": "^29.5.12",
