@@ -2,7 +2,13 @@ import { SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
 import { MainContract } from '../wrappers/MainContract';
 import '@ton/test-utils';
-import { ExpectHelpersType, MethodHelpersType, expectHelpers, methodHelpers, createContractInstance } from './helpers';
+import {
+    ExpectHelpersType,
+    MethodHelpersType,
+    expectHelpers,
+    methodHelpers,
+    createContractInstance
+} from './helpers';
 
 describe('MainContract', () => {
     let deployer: SandboxContract<TreasuryContract>;
@@ -26,34 +32,30 @@ describe('MainContract', () => {
 
     describe('deposit fail', () => {
         it('should not increase balance because of min deposit', async () => {
-            const balanceBefore = await helper.getBalanceInfo();
+            const balanceBefore = await helper.getInvestorInfo();
             const value = toNano(0.02);
 
             const result = await helper.deposit(value);
-            expectHelper.expectHaveTran(result, value, false);
+            expectHelper.haveTran(result, value, false);
 
-            const balanceAfter = await helper.getBalanceInfo();
+            const balanceAfter = await helper.getInvestorInfo();
 
             expect(balanceBefore).toBe(balanceAfter);
-            expectHelper.expectHaveFailEvents(result);
+            expectHelper.haveFailEvents(result);
         });
     });
 
     describe('deposit succeed', () => {
         it('should increase balance', async () => {
-            const balanceBefore = await helper.getBalanceInfo();
-            const value = toNano(5);
+            const investorInfo = await expectHelper.succeedDeposit();
 
-            const result = await helper.deposit(value);
-            expectHelper.expectHaveTran(result, value, true);
+            expect(investorInfo.upLine).toEqualAddress(await contract.getOwner());
+            expect(investorInfo.transfersLength).toBe(1n);
+            expect(investorInfo.transfers.size).toBe(1);
+            expect(investorInfo.transfers.get(0)?.isDeposit).toBeTruthy();
 
-            const balanceAfter = await helper.getBalanceInfo();
-
-            expect(balanceBefore).toBeNull();
-
-            expect(balanceAfter).not.toBeNull();
-            expect(balanceAfter?.total).toBe(value);
-            expectHelper.expectHaveOnlyOneEvent(result, value);
+            expect(investorInfo.transfers.get(0)?.amount).toBeLessThanOrEqual(await contract.getTotalBalance());
+            expect(investorInfo.transfers.get(0)?.amount).toBe(toNano(5) - toNano(0.03));
         });
     });
 });

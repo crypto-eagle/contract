@@ -6,6 +6,9 @@ export const deposit = (contract: SandboxContract<MainContract>, deployer: Sandb
         deployer.getSender(),
         {
             value
-        }, 'Deposit');
+        }, {
+            $$type: 'Deposit',
+            upLine: null
+        });
 };
 
