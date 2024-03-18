@@ -32,17 +32,31 @@ contract MainContract with Deployable, Ownable {
         self.minDeposit = minDeposit;
     }
 
+    // --- methods ---
+
     receive(msg: Deposit) {
         let msgValue: Int = context().value;
         require(msgValue >= self.minDeposit, "Minimum deposit is not enough");
 
-        let investorData: Investor = self.getInvestor(sender());
+        let investorData: Investor = self.getOrMakeInvestor(sender());
         if (msg.upLine != null && investorData.transfersLength == 0) {
             investorData.upLine = msg.upLine!!;
         }
 
         self.deposit(sender(), msgValue - self.gasConsumption);
     }
+
+    // --- getters ---
+
+    get fun investorInfo(address: Address): Investor? {
+        return self.investors.get(address);
+    }
+
+    get fun totalBalance(): Int {
+        return myBalance();
+    }
+
+    // --- private ---
 
     fun deposit(investor: Address, amount: Int) {
         let investorData: Investor = self.investors.get(investor)!!;
@@ -64,7 +78,7 @@ contract MainContract with Deployable, Ownable {
        };
     }
 
-    fun getInvestor(investor: Address): Investor {
+    fun getOrMakeInvestor(investor: Address): Investor {
         if (self.investors.get(investor) == null) {
             let investorData: Investor = Investor {
                 transfersLength: 0,
@@ -76,14 +90,6 @@ contract MainContract with Deployable, Ownable {
         }
 
         return self.investors.get(investor)!!;
-    }
-
-    get fun investorInfo(address: Address): Investor? {
-        return self.investors.get(address);
-    }
-
-    get fun totalBalance(): Int {
-        return myBalance();
     }
 
 }

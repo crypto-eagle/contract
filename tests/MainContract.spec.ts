@@ -10,6 +10,8 @@ import {
     createContractInstance
 } from './helpers';
 
+const gasConsumption = toNano(0.03);
+
 describe('MainContract', () => {
     let deployer: SandboxContract<TreasuryContract>;
     let contract: SandboxContract<MainContract>;
@@ -55,7 +57,7 @@ describe('MainContract', () => {
             expect(investorInfo.transfers.get(0)?.isDeposit).toBeTruthy();
 
             expect(investorInfo.transfers.get(0)?.amount).toBeLessThanOrEqual(await contract.getTotalBalance());
-            expect(investorInfo.transfers.get(0)?.amount).toBe(toNano(5) - toNano(0.03));
+            expect(investorInfo.transfers.get(0)?.amount).toBe(toNano(5) - gasConsumption);
         });
     });
 });
