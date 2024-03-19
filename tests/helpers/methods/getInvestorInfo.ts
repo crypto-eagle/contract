@@ -7,3 +7,4 @@ export const getInvestorInfo = async (contract: SandboxContract<MainContract>, d
 
     return await contract.getInvestorInfo(address);
 };
+

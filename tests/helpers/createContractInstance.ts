@@ -1,6 +1,7 @@
 import { Blockchain } from '@ton/sandbox';
 import { MainContract } from '../../build/MainContract/tact_MainContract';
 import { toNano } from '@ton/core';
+import { minDeposit } from './consts';
 
 export const createContractInstance = async () => {
     const blockchain = await Blockchain.create();
@@ -11,7 +12,7 @@ export const createContractInstance = async () => {
     //     debugLogs: true,
     // };
 
-    const contract = blockchain.openContract(await MainContract.fromInit(2n, toNano(5)));
+    const contract = blockchain.openContract(await MainContract.fromInit(2n, minDeposit));
     const deployer = await blockchain.treasury('deployer');
 
     const deployResult = await contract.send(

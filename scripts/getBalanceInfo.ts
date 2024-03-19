@@ -1,6 +1,5 @@
-import { Address, toNano } from '@ton/core';
-import { SimpleCounter } from '../wrappers/SimpleCounter';
-import { NetworkProvider, sleep } from '@ton/blueprint';
+import { Address } from '@ton/core';
+import { NetworkProvider } from '@ton/blueprint';
 import { MainContract } from '../build/MainContract/tact_MainContract';
 
 export async function run(provider: NetworkProvider, args: string[]) {
@@ -15,7 +14,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const mainContract = provider.open(MainContract.fromAddress(address));
 
-    const balanceInfo = await mainContract.getBalanceInfo()
+    const balanceInfo = await mainContract.getBalanceInfo(address)
 
     ui.clearActionPrompt();
     ui.write('balanceInfo: ' + JSON.stringify(balanceInfo));

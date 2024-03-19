@@ -1,23 +1,12 @@
 import "@stdlib/deploy";
 import "@stdlib/ownable";
 
-struct Transfer {
-    date: Int as uint32;
-    amount: Int as coins;
-    isDeposit: Bool;
-}
+import "./messages.tact";
+import "./structures.tact";
+import "./dummy-functions.tact";
 
-struct Investor {
-    upLine: Address;
-    transfers: map<Int as uint32, Transfer>;
-    transfersLength: Int as uint32;
-}
 
-message Deposit {
-    upLine: Address?;
-}
-
-contract MainContract with Deployable, Ownable {
+contract MainContract with Deployable, Ownable, Functions {
     const gasConsumption: Int = ton("0.03");
 
     id: Int as uint32;
@@ -39,11 +28,8 @@ contract MainContract with Deployable, Ownable {
         require(msgValue >= self.minDeposit, "Minimum deposit is not enough");
 
         let investorData: Investor = self.getOrMakeInvestor(sender());
-        if (msg.upLine != null && investorData.transfersLength == 0) {
-            investorData.upLine = msg.upLine!!;
-        }
 
-        self.deposit(sender(), msgValue - self.gasConsumption);
+        self.deposit(sender(), msg.upLine, msgValue - self.gasConsumption);
     }
 
     // --- getters ---
@@ -52,14 +38,43 @@ contract MainContract with Deployable, Ownable {
         return self.investors.get(address);
     }
 
-    get fun totalBalance(): Int {
-        return myBalance();
+    get fun balanceInfo(address: Address): BalanceInfo? {
+        let investorInfoOpt: Investor? = self.investorInfo(address);
+        if (investorInfoOpt == null) {
+            return null;
+        }
+
+        let investor: Investor = investorInfoOpt!!;
+
+        let totalDeposits: Int = 0;
+        let totalWithdrawals: Int = 0;
+
+        let i: Int = 0;
+        repeat (investor.transfersLength) {
+            let transfer: Transfer = investor.transfers.get(i)!!;
+            if (transfer.isDeposit) {
+                totalDeposits = totalDeposits + transfer.amount;
+            } else {
+                totalWithdrawals = totalWithdrawals + transfer.amount;
+            }
+            i = i + 1;
+        }
+
+        return BalanceInfo {
+            totalDeposits: totalDeposits,
+            totalWithdrawals: totalWithdrawals,
+            totalEarns: 0,
+            availableEarn: 0
+        };
     }
 
-    // --- private ---
+    // --- functions ---
 
-    fun deposit(investor: Address, amount: Int) {
+    fun deposit(investor: Address, upLine: Address?, amount: Int) {
         let investorData: Investor = self.investors.get(investor)!!;
+        if (upLine != null && investorData.transfersLength == 0) {
+            investorData.upLine = upLine!!;
+        }
 
         let transfer: Transfer = self.makeTransfer(amount, true);
         investorData.transfers.set(investorData.transfersLength, transfer);
@@ -68,14 +83,6 @@ contract MainContract with Deployable, Ownable {
         self.investors.set(investor, investorData);
 
         emit("Deposited".asComment());
-    }
-
-    fun makeTransfer(amount: Int, isDeposit: Bool): Transfer {
-        return Transfer {
-           date: now(),
-           isDeposit: isDeposit,
-           amount: amount
-       };
     }
 
     fun getOrMakeInvestor(investor: Address): Investor {

@@ -1,5 +1,4 @@
 import { SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { toNano } from '@ton/core';
 import { MainContract } from '../wrappers/MainContract';
 import '@ton/test-utils';
 import {
@@ -9,13 +8,13 @@ import {
     methodHelpers,
     createContractInstance
 } from './helpers';
+import { gasConsumption, minDeposit, testAddress } from './helpers/consts';
 
-const gasConsumption = toNano(0.03);
 
 describe('MainContract', () => {
     let deployer: SandboxContract<TreasuryContract>;
     let contract: SandboxContract<MainContract>;
-    let helper: MethodHelpersType;
+    let methodHelper: MethodHelpersType;
     let expectHelper: ExpectHelpersType;
 
     beforeEach(async () => {
@@ -23,7 +22,7 @@ describe('MainContract', () => {
         deployer = instance.deployer;
         contract = instance.contract;
 
-        helper = methodHelpers(contract, deployer);
+        methodHelper = methodHelpers(contract, deployer);
         expectHelper = expectHelpers(contract, deployer);
     });
 
@@ -32,32 +31,42 @@ describe('MainContract', () => {
         // blockchain and mainContract are ready to use
     });
 
-    describe('deposit fail', () => {
+    describe('deposit', () => {
         it('should not increase balance because of min deposit', async () => {
-            const balanceBefore = await helper.getInvestorInfo();
-            const value = toNano(0.02);
+            await expectHelper.failedDeposit();
+        });
 
-            const result = await helper.deposit(value);
-            expectHelper.haveTran(result, value, false);
+        it('should increase balance with owner upLine', async () => {
+            await expectHelper.succeedDeposit(null);
+        });
 
-            const balanceAfter = await helper.getInvestorInfo();
-
-            expect(balanceBefore).toBe(balanceAfter);
-            expectHelper.haveFailEvents(result);
+        it('should increase balance with custom upLine', async () => {
+            await expectHelper.succeedDeposit(testAddress);
         });
     });
 
-    describe('deposit succeed', () => {
-        it('should increase balance', async () => {
-            const investorInfo = await expectHelper.succeedDeposit();
+    describe('balance info', () => {
+        it('should return empty balance', async () => {
+            const result = await methodHelper.getBalanceInfo();
+            expect(result).toBeNull();
+        });
 
-            expect(investorInfo.upLine).toEqualAddress(await contract.getOwner());
-            expect(investorInfo.transfersLength).toBe(1n);
-            expect(investorInfo.transfers.size).toBe(1);
-            expect(investorInfo.transfers.get(0)?.isDeposit).toBeTruthy();
+        it('should return total deposits after deposit', async () => {
+            await expectHelper.succeedDeposit(null);
+            const result = await methodHelper.getBalanceInfo();
 
-            expect(investorInfo.transfers.get(0)?.amount).toBeLessThanOrEqual(await contract.getTotalBalance());
-            expect(investorInfo.transfers.get(0)?.amount).toBe(toNano(5) - gasConsumption);
+            expect(result).not.toBeNull();
+            expect(result!.totalDeposits).toBe(minDeposit - gasConsumption);
+        });
+
+        it('should return total deposits after 10 deposits', async () => {
+            for (const _ of Array(10)) {
+                await methodHelper.deposit(minDeposit, null);
+            }
+            const result = await methodHelper.getBalanceInfo();
+
+            expect(result).not.toBeNull();
+            expect(result!.totalDeposits).toBe(minDeposit * 10n - gasConsumption * 10n);
         });
     });
 });
