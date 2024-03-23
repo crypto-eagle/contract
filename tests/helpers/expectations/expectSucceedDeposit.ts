@@ -1,23 +1,21 @@
 import { SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Investor, MainContract } from '../../../build/MainContract/tact_MainContract';
+import { BalanceInfo, MainContract } from '../../../build/MainContract/tact_MainContract';
 import { Address } from '@ton/core';
 import { methodHelpers } from '../methodHelpers';
 import { expectHaveTran } from './expectHaveTran';
 import { expectHaveOnlyOneEvent } from './expectHaveEvent';
-import { gasConsumption, minDeposit } from '../consts';
+import { depositGasConsumption, minDeposit } from '../consts';
 
-export const expectSucceedDeposit = async (contract: SandboxContract<MainContract>, deployer: SandboxContract<TreasuryContract>, upLine: Address | null): Promise<Investor> => {
+export const expectSucceedDeposit = async (contract: SandboxContract<MainContract>, deployer: SandboxContract<TreasuryContract>, upLine: Address | null): Promise<BalanceInfo> => {
     const helper = methodHelpers(contract, deployer);
 
-    const investorInfoBefore = await helper.getInvestorInfo();
     const value = minDeposit;
 
     const result = await helper.deposit(value, upLine);
     expectHaveTran(contract, deployer, result, value, true);
 
-    const investorInfoAfter = await helper.getInvestorInfo();
+    const investorInfoAfter = await helper.getMyInvestorInfo();
 
-    expect(investorInfoBefore).toBeNull();
     expect(investorInfoAfter).not.toBeNull();
     expectHaveOnlyOneEvent(contract, deployer, result, value);
 
@@ -27,8 +25,12 @@ export const expectSucceedDeposit = async (contract: SandboxContract<MainContrac
     expect(investorInfoAfter!.transfers.get(0)?.isDeposit).toBeTruthy();
 
     expect(investorInfoAfter!.transfers.get(0)?.amount).toBeLessThanOrEqual(await contract.getTotalBalance());
-    expect(investorInfoAfter!.transfers.get(0)?.amount).toBe(value - gasConsumption);
+    expect(investorInfoAfter!.transfers.get(0)?.amount).toBe(value - depositGasConsumption);
 
-    return investorInfoAfter!;
+    const balanceInfo = await helper.getMyBalanceInfo();
+    expect(balanceInfo?.totalDeposits).toBe(value - depositGasConsumption);
+    expect(balanceInfo?.totalWithdrawals).toBe(0n);
+
+    return balanceInfo!;
 };
 

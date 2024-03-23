@@ -1,3 +1,4 @@
+import '@ton/test-utils';
 import { Blockchain } from '@ton/sandbox';
 import { MainContract } from '../../build/MainContract/tact_MainContract';
 import { toNano } from '@ton/core';
@@ -33,5 +34,5 @@ export const createContractInstance = async () => {
         success: true
     });
 
-    return {contract, deployer};
+    return {contract, deployer, blockchain};
 };

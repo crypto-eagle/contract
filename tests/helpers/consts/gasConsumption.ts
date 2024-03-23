@@ -1,3 +1,3 @@
 import { toNano } from '@ton/core';
 
-export const gasConsumption = toNano(0.03);
+export const depositGasConsumption = toNano(0.1);

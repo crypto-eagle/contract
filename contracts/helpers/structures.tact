@@ -6,6 +6,7 @@ struct Transfer {
 
 struct Investor {
     upLine: Address;
+    bonus: Int as coins;
     transfers: map<Int as uint32, Transfer>;
     transfersLength: Int as uint32;
 }
