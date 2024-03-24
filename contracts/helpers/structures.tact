@@ -8,12 +8,13 @@ struct Investor {
     upLine: Address;
     bonus: Int as coins;
     transfers: map<Int as uint32, Transfer>;
-    transfersLength: Int as uint32;
+    transfersCount: Int as uint32;
 }
 
 struct BalanceInfo {
     totalDeposits: Int as coins;
     totalWithdrawals: Int as coins;
     totalEarns: Int as coins;
-    availableEarn: Int as coins;
+    referralBonus: Int as coins;
+    dailyIncome: Int as coins;
 }

@@ -2,8 +2,7 @@ import '@ton/test-utils';
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { MainContract } from '../wrappers/MainContract';
 import { createContractInstance, expectHelpers, ExpectHelpersType, methodHelpers, MethodHelpersType } from './helpers';
-import { depositGasConsumption, minDeposit } from './helpers/consts';
-import { ExitCodes } from './helpers/consts/exitCodes';
+import { minDeposit, ExitCodes } from './helpers/consts';
 import { toNano } from '@ton/core';
 import { expectHaveTran, expectHaveTranWith } from './helpers/expectations/expectHaveTran';
 import { expectHaveFailEvents } from './helpers/expectations/expectHaveEvent';
@@ -81,7 +80,7 @@ describe('MainContract', () => {
             const result = await methodHelper.getMyBalanceInfo();
 
             expect(result).not.toBeNull();
-            expect(result!.totalDeposits).toBe(minDeposit - depositGasConsumption);
+            expect(result!.totalDeposits).toBe(minDeposit);
         });
 
         it('should return total deposits after 10 deposits', async () => {
@@ -91,8 +90,121 @@ describe('MainContract', () => {
             const result = await methodHelper.getMyBalanceInfo();
 
             expect(result).not.toBeNull();
-            expect(result!.totalDeposits).toBe(minDeposit * 10n - depositGasConsumption * 10n);
+            expect(result!.totalDeposits).toBe(minDeposit * 10n);
         });
+    });
+
+    describe('daily percent', () => {
+        it('should return 0 for 0 deposits', async () => {
+            const result = await methodHelper.getMyBalanceInfo();
+
+            expect(result).not.toBeNull();
+            expect(result?.totalDeposits).toBe(0n);
+            expect(result?.totalWithdrawals).toBe(0n);
+            expect(result?.totalEarns).toBe(0n);
+            expect(result?.referralBonus).toBe(0n);
+            expect(result?.dailyIncome).toBe(0n);
+        });
+
+        it('should return 0 for 1 deposits now', async () => {
+            await methodHelper.deposit(minDeposit, null);
+            const result = await methodHelper.getMyBalanceInfo();
+            const ownerBonus30 = minDeposit / 100n * 30n;
+
+            expect(result).not.toBeNull();
+            expect(result?.totalDeposits).toBe(minDeposit);
+            expect(result?.totalWithdrawals).toBe(0n);
+            expect(result?.totalEarns).toBe(0n);
+            expect(result?.referralBonus).toBe(ownerBonus30);
+            expect(result?.dailyIncome).toBe(0n);
+        });
+
+        it.each(['1', '2', '4', '8', '16', '32', '64', '128', '256'])(
+            'should return proper daily income after 1 deposit %s day before', async (offset) => {
+                const offsetDays = +offset;
+
+                await methodHelper.deposit(minDeposit, null);
+                const ownerBonus30 = minDeposit / 100n * 30n;
+
+                let nowDate = new Date();
+                nowDate.setDate(nowDate.getDate() + offsetDays);
+                jest.useFakeTimers().setSystemTime(nowDate.getTime());
+
+                const result = await methodHelper.getMyBalanceInfo();
+
+                expect(result).not.toBeNull();
+                expect(result?.totalDeposits).toBe(minDeposit);
+                expect(result?.totalWithdrawals).toBe(0n);
+                expect(result?.totalEarns).toBe(0n);
+                expect(result?.referralBonus).toBe(ownerBonus30);
+                expect(result?.dailyIncome).toBe(minDeposit / 100n * BigInt(offsetDays));
+            });
+
+        it.each(['15', '23', '39', '71', '135', '263'])(
+            'should return proper daily income after 2 deposits (1 today, 1 in 7 days) deposits %s day before', async (offset) => {
+                const offsetDays = +offset;
+                let ownerBonus30 = minDeposit / 100n * 30n;
+
+                await methodHelper.deposit(minDeposit, null);
+
+                const secondDepositDate = new Date();
+                secondDepositDate.setDate(secondDepositDate.getDate() + 7);
+                const checkDate = new Date();
+                checkDate.setDate(checkDate.getDate() + offsetDays);
+
+                jest.useFakeTimers().setSystemTime(secondDepositDate.getTime());
+                await methodHelper.deposit(minDeposit, null);
+
+                jest.useFakeTimers().setSystemTime(checkDate.getTime());
+                const result = await methodHelper.getMyBalanceInfo();
+
+                expect(result).not.toBeNull();
+                expect(result?.totalDeposits).toBe(minDeposit * 2n);
+                expect(result?.totalWithdrawals).toBe(0n);
+                expect(result?.totalEarns).toBe(0n);
+                expect(result?.referralBonus).toBe(ownerBonus30 * 2n);
+
+                let income = minDeposit * 7n / 100n;
+                income += minDeposit * 2n * (BigInt(offsetDays) - 7n) / 100n;
+
+                expect(result?.dailyIncome).toBe(income);
+            });
+
+        it.each(['15', '23', '39', '71', '135', '263'])(
+            'should return proper daily income after 3 deposits (1 today, 1 in 7 days, 1 in 8 days) deposits %s day before', async (offset) => {
+                const offsetDays = +offset;
+                let ownerBonus30 = minDeposit / 100n * 30n;
+
+                await methodHelper.deposit(minDeposit, null);
+
+                const secondDepositDate = new Date();
+                secondDepositDate.setDate(secondDepositDate.getDate() + 7);
+                const thirdDepositDate = new Date();
+                thirdDepositDate.setDate(thirdDepositDate.getDate() + 8);
+                const checkDate = new Date();
+                checkDate.setDate(checkDate.getDate() + offsetDays);
+
+                jest.useFakeTimers().setSystemTime(secondDepositDate.getTime());
+                await methodHelper.deposit(minDeposit, null);
+
+                jest.useFakeTimers().setSystemTime(thirdDepositDate.getTime());
+                await methodHelper.deposit(minDeposit, null);
+
+                jest.useFakeTimers().setSystemTime(checkDate.getTime());
+                const result = await methodHelper.getMyBalanceInfo();
+
+                expect(result).not.toBeNull();
+                expect(result?.totalDeposits).toBe(minDeposit * 3n);
+                expect(result?.totalWithdrawals).toBe(0n);
+                expect(result?.totalEarns).toBe(0n);
+                expect(result?.referralBonus).toBe(ownerBonus30 * 3n);
+
+                let income = minDeposit * 7n / 100n;
+                income += minDeposit * 2n * (8n - 7n) / 100n;
+                income += minDeposit * 3n * (BigInt(offsetDays) - 8n) / 100n;
+
+                expect(result?.dailyIncome).toBe(income);
+            });
     });
 
 });

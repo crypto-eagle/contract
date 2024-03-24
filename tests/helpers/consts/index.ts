@@ -1,2 +1,2 @@
-export * from './gasConsumption';
 export * from './minDeposit';
+export * from './exitCodes';

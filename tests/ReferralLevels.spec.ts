@@ -1,5 +1,5 @@
 import { createContractInstance, methodHelpers, MethodHelpersType } from './helpers';
-import { depositGasConsumption, minDeposit } from './helpers/consts';
+import { minDeposit } from './helpers/consts';
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { MainContract } from '../build/MainContract/tact_MainContract';
 import { toNano } from '@ton/core';
@@ -32,15 +32,16 @@ describe('referral system', () => {
         await testWalletHelper.deposit(minDeposit, null);
         const testWalletBalanceInfo = await testWalletHelper.getMyBalanceInfo();
 
-        expect(testWalletBalanceInfo?.totalDeposits).toBe(minDeposit - depositGasConsumption);
+        expect(testWalletBalanceInfo?.totalDeposits).toBe(minDeposit);
 
         let deployerInfo = await methodHelper.getMyInvestorInfo();
-        const ownerBonus30 = (minDeposit - depositGasConsumption) / 100n * 30n;
+        const ownerBonus30 = minDeposit / 100n * 30n;
 
         expect(deployerInfo?.bonus).toBe(ownerBonus30);
 
         const balanceInfo = await methodHelper.getMyBalanceInfo();
-        expect(balanceInfo?.availableEarn).toBe(ownerBonus30);
+        expect(balanceInfo?.referralBonus).toBe(ownerBonus30);
+        expect(balanceInfo?.dailyIncome).toBe(0n);
         expect(balanceInfo?.totalDeposits).toBe(0n);
         expect(balanceInfo?.totalWithdrawals).toBe(0n);
         expect(balanceInfo?.totalEarns).toBe(0n);
@@ -48,7 +49,7 @@ describe('referral system', () => {
 
     it('should count upLiners (20 lvl)', async () => {
         const depositVal = toNano(10);
-        const depositOnePercent = (depositVal - depositGasConsumption) / 100n;
+        const depositOnePercent = depositVal / 100n;
 
         const multi = (percent: bigint, times: bigint) => {
             return depositOnePercent * percent * times;
@@ -87,7 +88,7 @@ describe('referral system', () => {
             await testWalletHelper.deposit(depositVal, parentWallet.address);
 
             const testWalletBalanceInfo = await testWalletHelper.getMyBalanceInfo();
-            expect(testWalletBalanceInfo?.totalDeposits).toBe(depositVal - depositGasConsumption);
+            expect(testWalletBalanceInfo?.totalDeposits).toBe(depositVal);
 
             parentWallet = wallet;
         }
@@ -104,8 +105,9 @@ describe('referral system', () => {
             expect(walletInfo?.upLine).toEqualAddress(parentWallet.address);
 
             const balanceInfo = await walletHelper.getMyBalanceInfo();
-            expect(balanceInfo?.availableEarn).toBe(expectation);
-            expect(balanceInfo?.totalDeposits).toBe(depositVal - depositGasConsumption);
+            expect(balanceInfo?.referralBonus).toBe(expectation);
+            expect(balanceInfo?.dailyIncome).toBe(0n);
+            expect(balanceInfo?.totalDeposits).toBe(depositVal);
             expect(balanceInfo?.totalWithdrawals).toBe(0n);
             expect(balanceInfo?.totalEarns).toBe(0n);
 

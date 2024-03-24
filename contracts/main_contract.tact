@@ -7,14 +7,15 @@ import "./helpers/dummy-functions.tact";
 
 
 contract MainContract with Deployable, Ownable, Functions {
-    const depositGasConsumption: Int = ton("0.1");
-
     id: Int as uint32;
     owner: Address;
 
     minDeposit: Int as coins;
     investors: map<Address, Investor>;
     bonuses: map<Int, Int>;
+
+    const dayTimeLength: Int = 24*60*60;
+    const hoursTimeLength: Int = 60*60;
 
     init(id: Int, minDeposit: Int) {
         self.id = id;
@@ -47,7 +48,7 @@ contract MainContract with Deployable, Ownable, Functions {
 
         let investorData: Investor = self.getOrMakeInvestor(sender());
 
-        self.deposit(sender(), msg.upLine, msgValue - self.depositGasConsumption);
+        self.deposit(sender(), msg.upLine, msgValue);
     }
 
     // --- getters ---
@@ -65,11 +66,15 @@ contract MainContract with Deployable, Ownable, Functions {
         return self.getBalanceInfo(investorInfoOpt!!);
     }
 
+    get fun minDepositValue(): Int {
+        return self.minDeposit;
+    }
+
     // --- functions ---
 
     fun deposit(investor: Address, upLine: Address?, amount: Int) {
         let investorData: Investor = self.investors.get(investor)!!;
-        if (upLine != null && investorData.transfersLength == 0) {
+        if (upLine != null && investorData.transfersCount == 0) {
             investorData.upLine = upLine!!;
 
             // throw if upLine not found
@@ -79,8 +84,8 @@ contract MainContract with Deployable, Ownable, Functions {
         }
 
         let transfer: Transfer = self.makeTransfer(amount, true);
-        investorData.transfers.set(investorData.transfersLength, transfer);
-        investorData.transfersLength = investorData.transfersLength + 1;
+        investorData.transfers.set(investorData.transfersCount, transfer);
+        investorData.transfersCount = investorData.transfersCount + 1;
 
         self.investors.set(investor, investorData);
 
@@ -115,7 +120,7 @@ contract MainContract with Deployable, Ownable, Functions {
     fun getOrMakeInvestor(investor: Address): Investor {
         if (self.investors.get(investor) == null) {
             let investorData: Investor = Investor {
-                transfersLength: 0,
+                transfersCount: 0,
                 transfers: null,
                 bonus: ton("0"),
                 upLine: self.owner
@@ -132,7 +137,7 @@ contract MainContract with Deployable, Ownable, Functions {
         let totalWithdrawals: Int = 0;
 
         let i: Int = 0;
-        repeat (investor.transfersLength) {
+        repeat (investor.transfersCount) {
             let transfer: Transfer = investor.transfers.get(i)!!;
             if (transfer.isDeposit) {
                 totalDeposits = totalDeposits + transfer.amount;
@@ -146,8 +151,48 @@ contract MainContract with Deployable, Ownable, Functions {
             totalDeposits: totalDeposits,
             totalWithdrawals: totalWithdrawals,
             totalEarns: 0,
-            availableEarn: investor.bonus
+            referralBonus: investor.bonus,
+            dailyIncome: self.getDailyIncome(investor)
         };
+    }
+
+    fun getDailyIncome(investor: Investor): Int {
+        let dailyIncome: Int = 0;
+
+        let currentChangeBalanceDate: Int? = null;
+        let currentBalance: Int = 0;
+
+        let i: Int = 0;
+        repeat (investor.transfersCount) {
+            let transfer: Transfer = investor.transfers.get(i)!!;
+
+            if (currentBalance >= self.minDeposit && currentChangeBalanceDate != null) {
+                let diff: Int = transfer.date - currentChangeBalanceDate!!;
+                let diffDays: Int = (diff + self.hoursTimeLength) / self.dayTimeLength;
+                dailyIncome = dailyIncome + currentBalance * diffDays;
+            }
+
+            if (transfer.isDeposit) {
+                currentBalance = currentBalance + transfer.amount;
+            } else {
+                currentBalance = currentBalance - transfer.amount;
+            }
+
+            if (currentBalance >= self.minDeposit) {
+               currentChangeBalanceDate = transfer.date;
+            }
+
+            i = i + 1;
+        }
+
+        if (currentBalance >= self.minDeposit) {
+            let diff: Int = now() - currentChangeBalanceDate!!;
+            let diffDays: Int = (diff + self.hoursTimeLength) / self.dayTimeLength;
+
+            dailyIncome = dailyIncome + currentBalance * diffDays;
+        }
+
+        return dailyIncome / 100;
     }
 
 }

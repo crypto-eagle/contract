@@ -1,6 +1,18 @@
-import { Address } from '@ton/core';
+import { Address, fromNano, toNano } from '@ton/core';
 import { NetworkProvider } from '@ton/blueprint';
 import { MainContract } from '../build/MainContract/tact_MainContract';
+
+const serialize = (data: unknown) => {
+    return JSON.stringify(data, (key, value) => {
+            if (Address.isAddress(value)) {
+                return Address.normalize(value);
+            }
+            return typeof value === 'bigint'
+                ? fromNano(value)
+                : value;
+        } // return everything else unchanged
+    );
+};
 
 export async function run(provider: NetworkProvider, args: string[]) {
     const ui = provider.ui();
@@ -14,8 +26,21 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const mainContract = provider.open(MainContract.fromAddress(address));
 
-    const balanceInfo = await mainContract.getBalanceInfo(address)
+    await mainContract.send(
+        provider.sender(),
+        {
+            value: toNano('1')
+        },
+        {
+            $$type: 'Deposit',
+            upLine: null
+        }
+    );
+    const wallet = provider.sender().address!;
+    const balanceInfo = await mainContract.getBalanceInfo(wallet);
+    const investorInfo = await mainContract.getInvestorInfo(wallet);
 
     ui.clearActionPrompt();
-    ui.write('balanceInfo: ' + JSON.stringify(balanceInfo));
+    ui.write('balanceInfo: ' + serialize(balanceInfo));
+    ui.write('investorInfo: ' + serialize(investorInfo));
 }

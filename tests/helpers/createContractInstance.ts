@@ -19,7 +19,7 @@ export const createContractInstance = async () => {
     const deployResult = await contract.send(
         deployer.getSender(),
         {
-            value: toNano('0.05')
+            value: minDeposit
         },
         {
             $$type: 'Deploy',

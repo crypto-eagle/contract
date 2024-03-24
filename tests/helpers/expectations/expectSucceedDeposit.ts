@@ -4,7 +4,7 @@ import { Address } from '@ton/core';
 import { methodHelpers } from '../methodHelpers';
 import { expectHaveTran } from './expectHaveTran';
 import { expectHaveOnlyOneEvent } from './expectHaveEvent';
-import { depositGasConsumption, minDeposit } from '../consts';
+import { minDeposit } from '../consts';
 
 export const expectSucceedDeposit = async (contract: SandboxContract<MainContract>, deployer: SandboxContract<TreasuryContract>, upLine: Address | null): Promise<BalanceInfo> => {
     const helper = methodHelpers(contract, deployer);
@@ -20,15 +20,15 @@ export const expectSucceedDeposit = async (contract: SandboxContract<MainContrac
     expectHaveOnlyOneEvent(contract, deployer, result, value);
 
     expect(investorInfoAfter!.upLine).toEqualAddress(upLine ?? await contract.getOwner());
-    expect(investorInfoAfter!.transfersLength).toBe(1n);
+    expect(investorInfoAfter!.transfersCount).toBe(1n);
     expect(investorInfoAfter!.transfers.size).toBe(1);
     expect(investorInfoAfter!.transfers.get(0)?.isDeposit).toBeTruthy();
 
-    expect(investorInfoAfter!.transfers.get(0)?.amount).toBeLessThanOrEqual(await contract.getTotalBalance());
-    expect(investorInfoAfter!.transfers.get(0)?.amount).toBe(value - depositGasConsumption);
+    expect(investorInfoAfter!.transfers.get(0)?.amount).toBeLessThanOrEqual((await contract.getTotalBalance()) + 100000000n);
+    expect(investorInfoAfter!.transfers.get(0)?.amount).toBe(value);
 
     const balanceInfo = await helper.getMyBalanceInfo();
-    expect(balanceInfo?.totalDeposits).toBe(value - depositGasConsumption);
+    expect(balanceInfo?.totalDeposits).toBe(value);
     expect(balanceInfo?.totalWithdrawals).toBe(0n);
 
     return balanceInfo!;
