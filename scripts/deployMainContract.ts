@@ -1,9 +1,12 @@
-import { toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { MainContract } from '../wrappers/MainContract';
 import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
-    const mainContract = provider.open(await MainContract.fromInit(BigInt(Math.floor(Math.random() * 10000)), toNano(1)));
+    // TODO: Fill constants
+    const founder: Address = Address.parse('/*_*/');
+
+    const mainContract = provider.open(await MainContract.fromInit(BigInt(Math.floor(Math.random() * 10000)), toNano(1), founder));
 
     await mainContract.send(
         provider.sender(),

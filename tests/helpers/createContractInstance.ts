@@ -1,7 +1,6 @@
 import '@ton/test-utils';
 import { Blockchain } from '@ton/sandbox';
 import { MainContract } from '../../build/MainContract/tact_MainContract';
-import { toNano } from '@ton/core';
 import { minDeposit } from './consts';
 
 export const createContractInstance = async () => {
@@ -13,7 +12,10 @@ export const createContractInstance = async () => {
     //     debugLogs: true,
     // };
 
-    const contract = blockchain.openContract(await MainContract.fromInit(2n, minDeposit));
+    const founderContract = await blockchain.treasury('founder');
+    const contract = blockchain.openContract(
+        await MainContract.fromInit(BigInt(Math.floor(Math.random() * 10000)), minDeposit, founderContract.address)
+    );
     const deployer = await blockchain.treasury('deployer');
 
     const deployResult = await contract.send(
@@ -34,5 +36,5 @@ export const createContractInstance = async () => {
         success: true
     });
 
-    return {contract, deployer, blockchain};
+    return {contract, deployer, blockchain, founderContract};
 };

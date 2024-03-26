@@ -9,6 +9,7 @@ import "./helpers/dummy-functions.tact";
 contract MainContract with Deployable, Ownable, Functions {
     id: Int as uint32;
     owner: Address;
+    founder: Address;
 
     minDeposit: Int as coins;
     investors: map<Address, Investor>;
@@ -17,9 +18,10 @@ contract MainContract with Deployable, Ownable, Functions {
     const dayTimeLength: Int = 24*60*60;
     const hoursTimeLength: Int = 60*60;
 
-    init(id: Int, minDeposit: Int) {
+    init(id: Int, minDeposit: Int, founder: Address) {
         self.id = id;
         self.owner = sender();
+        self.founder = founder;
         self.minDeposit = minDeposit;
         self.getOrMakeInvestor(self.owner);
 
@@ -49,6 +51,14 @@ contract MainContract with Deployable, Ownable, Functions {
         let investorData: Investor = self.getOrMakeInvestor(sender());
 
         self.deposit(sender(), msg.upLine, msgValue);
+    }
+
+    receive(msg: ClaimInvestorRewards) {
+        let investor: Investor? = self.investors.get(sender());
+
+        require(investor != null, "Only registered investors can claim rewards");
+
+        self.claimRewards(sender(), investor!!);
     }
 
     // --- getters ---
@@ -83,12 +93,9 @@ contract MainContract with Deployable, Ownable, Functions {
             }
         }
 
-        let transfer: Transfer = self.makeTransfer(amount, true);
-        investorData.transfers.set(investorData.transfersCount, transfer);
-        investorData.transfersCount = investorData.transfersCount + 1;
+        self.addTransfer(investor, investorData, self.makeTransfer(amount, true));
 
-        self.investors.set(investor, investorData);
-
+        // TODO: Add bonus from claimed rewards or deposit?
         self.addBonuses(investorData, amount, 1);
 
         emit("Deposited".asComment());
@@ -193,6 +200,93 @@ contract MainContract with Deployable, Ownable, Functions {
         }
 
         return dailyIncome / 100;
+    }
+
+    fun claimRewards(investorAddress: Address, investor: Investor) {
+        let lastDeposit: Transfer? = self.getLastDeposit(investor);
+
+        require(lastDeposit != null, "There are no deposit on record eligible for rewards claiming");
+
+        let rewardsAmount: Int = (lastDeposit!!).amount * 310 / 100;
+        let availableRewardsAmount: Int = self.getDailyIncome(investor);
+
+        // TODO: Check this business logic is correct
+        if ((availableRewardsAmount < rewardsAmount) && (investor.bonus >= (rewardsAmount - availableRewardsAmount))) {
+            investor.bonus = investor.bonus - (rewardsAmount - availableRewardsAmount);
+            self.investors.set(investorAddress, investor);
+
+            availableRewardsAmount = rewardsAmount;
+        }
+
+        require(availableRewardsAmount >= rewardsAmount, "Available rewards balance is below the minimum claim threshold");
+
+        // TODO: Should we check contract balance before?
+        self.payFounderFee(rewardsAmount);
+        self.payInvestorRewards(investorAddress, rewardsAmount);
+
+        self.addTransfer(investorAddress, investor, self.makeTransfer(rewardsAmount, false));
+
+        // TODO: Add bonus from claimed rewards or deposit?
+        self.addBonuses(investor, rewardsAmount, self.getLevel(investor));
+
+        emit("Claimed rewards".asComment());
+    }
+
+    fun getLastDeposit(investor: Investor): Transfer? {
+        let i: Int = investor.transfersCount - 1;
+        repeat (investor.transfersCount) {
+            let transfer: Transfer = investor.transfers.get(i)!!;
+
+            if (transfer.isDeposit) {
+                return transfer;
+            }
+
+            i = i - 1;
+        }
+
+        return null;
+    }
+
+    fun getLevel(investor: Investor): Int {
+        let upLine: Address = investor.upLine;
+        let level: Int = 1;// TODO: Start from 1 or 2?
+        while (upLine != self.owner) {
+            level = level + 1;
+        }
+
+        return level;
+    }
+
+    fun payFounderFee(rewardsAmount: Int) {
+        let founderFeeAmount: Int = rewardsAmount * 30 / 100;
+
+        send(
+            SendParameters {
+                to: self.founder,
+                bounce: true,// TODO: Should we bounce this back?
+                value: founderFeeAmount,
+                body: TopUpWithFounderFee{amount: founderFeeAmount}.toCell(),
+                mode: SendRemainingValue + SendIgnoreErrors + SendPayGasSeparately// TODO: Should we ignore errors?
+            }
+        );
+    }
+
+    fun payInvestorRewards(investorAddress: Address, rewardsAmount: Int) {
+        send(
+            SendParameters {
+                to: investorAddress,
+                bounce: true,// TODO: Should we bounce this back?
+                value: rewardsAmount,
+                mode: SendRemainingValue + SendIgnoreErrors + SendPayGasSeparately// TODO: Should we ignore errors?
+            }
+        );
+    }
+
+    fun addTransfer(investorAddress: Address, investor: Investor, transfer: Transfer) {
+        investor.transfers.set(investor.transfersCount, transfer);
+        investor.transfersCount = investor.transfersCount + 1;
+
+        self.investors.set(investorAddress, investor);
     }
 
 }
