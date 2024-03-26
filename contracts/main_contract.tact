@@ -47,6 +47,8 @@ contract MainContract with Deployable, Ownable, Functions {
     receive(msg: Deposit) {
         let msgValue: Int = context().value;
         require(msgValue >= self.minDeposit, "Minimum deposit is not enough");
+        // todo: check if deposit 0 -> can continue
+        // if deposit > 0 -> check if 310% reached
 
         let investorData: Investor = self.getOrMakeInvestor(sender());
 
@@ -154,6 +156,7 @@ contract MainContract with Deployable, Ownable, Functions {
             i = i + 1;
         }
 
+        // todo: available withdraw = referralBonus + dailyIncome - totalWithdrawals
         return BalanceInfo {
             totalDeposits: totalDeposits,
             totalWithdrawals: totalWithdrawals,
