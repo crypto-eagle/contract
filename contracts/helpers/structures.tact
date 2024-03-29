@@ -18,3 +18,11 @@ struct BalanceInfo {
     referralBonus: Int as coins;
     dailyIncome: Int as coins;
 }
+
+struct ContractMeta {
+    id: Int as uint32;
+    founder: Address;
+    minDeposit: Int as coins;
+    investors: map<Address, Investor>;
+    bonuses: map<Int, Int>;
+}

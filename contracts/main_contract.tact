@@ -84,25 +84,6 @@ contract MainContract with Deployable, Ownable, Functions {
 
     // --- functions ---
 
-    fun deposit(investor: Address, upLine: Address?, amount: Int) {
-        let investorData: Investor = self.investors.get(investor)!!;
-        if (upLine != null && investorData.transfersCount == 0) {
-            investorData.upLine = upLine!!;
-
-            // throw if upLine not found
-            if (self.investors.get(investorData.upLine) == null) {
-                throw(1000);
-            }
-        }
-
-        self.addTransfer(investor, investorData, self.makeTransfer(amount, true));
-
-        // TODO: Add bonus from claimed rewards or deposit?
-        self.addBonuses(investorData, amount, 1);
-
-        emit("Deposited".asComment());
-    }
-
     fun addBonuses(investor: Investor, amount: Int, level: Int) {
         if (self.investors.get(investor.upLine) == null) {
             return;
@@ -166,7 +147,11 @@ contract MainContract with Deployable, Ownable, Functions {
         };
     }
 
+
+
     fun getDailyIncome(investor: Investor): Int {
+
+
         let dailyIncome: Int = 0;
 
         let currentChangeBalanceDate: Int? = null;
