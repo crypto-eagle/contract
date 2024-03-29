@@ -1,5 +1,6 @@
 trait Rounds {
     const dayTimeLength: Int = 24*60*60;
+    // каждый 4й день считается незавершенным, это фикс
     const oneHourTimeLength: Int = 60*60;
 
 
@@ -25,7 +26,7 @@ trait Rounds {
         let depositAmount: Int = currentRound.deposit;
         let reachedBalance: Int = investor.bonus + self.getDailyIncome(currentRound);
 
-        return depositAmount * 310 >= reachedBalance;
+        return depositAmount * 310 / 100 >= reachedBalance;
     }
 
     fun getDailyIncome(currentRound: Round): Int {
@@ -41,11 +42,7 @@ trait Rounds {
     fun makeNewRound(investor: Investor) {
         require(investor.currentRound == null, "Current round is not finished");
 
-        if (investor.round == null) {
-            investor.round = 0;
-        } else {
-            investor.round = (investor.round!!) + 1;
-        }
+        investor.round = investor.round + 1;
 
         investor.currentRound = Round {
             deposit: context().value,

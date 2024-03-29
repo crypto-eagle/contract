@@ -18,8 +18,6 @@ struct ContractMeta {
     investors: map<Address, Investor>;
     // система бонусов
     bonusSystem: map<Int, Int>;
-    // Главный аплайнер контракта
-    rootUpLine: Address;
 }
 
 struct Investor {
@@ -44,7 +42,7 @@ struct Investor {
 
     /* Порядковый номер цикла, по сути количество внесенных Deposit.amount.
        Увеличиваем на 1 после каждого депозита. */
-    round: Int? as uint8;
+    round: Int as uint8;
     // Текущий круг
     currentRound: Round?;
 }

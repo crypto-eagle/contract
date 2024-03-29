@@ -33,7 +33,7 @@ trait Functions with Rounds {
         require(meta.investors.get(investorAddress) == null, "Investor already exists");
 
         if (upLine == null) {
-            upLine = meta.rootUpLine;
+            upLine = meta.founder;
         }
 
         // throw if upLine not found
@@ -46,7 +46,7 @@ trait Functions with Rounds {
             dailyIncomeHistorical: ton("0"),
             bonus: ton("0"),
             bonusHistorical: ton("0"),
-            round: null,
+            round: 1,
             currentRound: null
         };
 
@@ -72,9 +72,10 @@ trait Functions with Rounds {
         let bonusAmount: Int = amount / 100 * percent!!;
 
         upLineInvestor.bonus = upLineInvestor.bonus + bonusAmount;
+        upLineInvestor.bonusHistorical = upLineInvestor.bonusHistorical + bonusAmount;
         self.updateInvestor(meta, upLineInvestor);
 
-        if (investor.upLine == meta.rootUpLine) {
+        if (investor.upLine == meta.founder) {
             return;
         }
 
@@ -89,7 +90,7 @@ trait Functions with Rounds {
             let investor: Investor = investorData!!;
             require(self.isRoundFinished(investor), "Current round is not finished");
 
-            minDeposit = minDeposit + (investor.round!!) * meta.roundMultiplier;
+            minDeposit = minDeposit * investor.round * meta.roundMultiplier;
         }
 
         return minDeposit;
@@ -113,6 +114,8 @@ trait Functions with Rounds {
         // todo: move bonuses to withdraw
         // self.addBonuses(self.meta, investor, amount, 1);
         self.updateInvestor(meta, investor);
+
+        // todo: send percent to founder
 
         emit("Deposited".asComment());
     }

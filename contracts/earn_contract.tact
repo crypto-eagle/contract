@@ -16,10 +16,9 @@ contract EarnContract with Deployable, Ownable, Functions {
         self.meta = ContractMeta {
             id: id,
             founder: founder,
-            rootUpLine: self.owner,
             minDeposit: minDeposit,
             roundMultiplier: 3,
-            maxDepositMultiplier: 5,
+            maxDepositMultiplier: 100,
             investors: emptyMap(),
             bonusSystem: emptyMap()
         };
@@ -47,11 +46,13 @@ contract EarnContract with Deployable, Ownable, Functions {
     }
 
     get fun minDeposit(): Int {
+        // todo: check last deposit more than
+        // return max(investor.currentRound.deposit, self.meta.minDeposit);
         return self.getMinDeposit(self.meta, sender());
     }
 
     get fun maxDeposit(): Int {
-        return self.minDeposit() * self.meta.maxDepositMultiplier;
+        return self.getMinDeposit(self.meta, sender()) * self.meta.maxDepositMultiplier;
     }
 
 }
