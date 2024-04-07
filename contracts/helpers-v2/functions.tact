@@ -42,6 +42,7 @@ trait Functions with Rounds {
         let investorData: Investor = Investor {
             upLine: upLine!!,
             address: investorAddress,
+            totalDeposits: ton("0"),
             dailyIncome: ton("0"),
             dailyIncomeHistorical: ton("0"),
             bonus: ton("0"),
@@ -96,7 +97,7 @@ trait Functions with Rounds {
         return minDeposit;
     }
 
-    fun deposit(meta: ContractMeta, investorAddress: Address, upLineAddress: Address?) {
+    fun deposit(meta: ContractMeta, investorAddress: Address, amount: Int, upLineAddress: Address?) {
         let investorData: Investor? = meta.investors.get(investorAddress);
         if (investorData != null) {
             // закрываем круг
@@ -113,6 +114,7 @@ trait Functions with Rounds {
         self.makeNewRound(investor);
         // todo: move bonuses to withdraw
         // self.addBonuses(self.meta, investor, amount, 1);
+        investor.totalDeposits = investor.totalDeposits + amount;
         self.updateInvestor(meta, investor);
 
         // todo: send percent to founder

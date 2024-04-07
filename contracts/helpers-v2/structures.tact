@@ -25,6 +25,7 @@ struct Investor {
     upLine: Address;
     // Адрес кошелька инвестора, на который будет отправлять Contract.claimRewards(Investor).
     address: Address;
+    totalDeposits: Int as coins;
     /*
         Общая сумма ежедневного пассивного дохода за предыдущие Investor.round.
         Увеличиваем после каждого депозита при увеличении Investor.round до изменения Investor.lastDepositAmount на Contract.getDailyIncome(Investor).

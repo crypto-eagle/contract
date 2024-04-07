@@ -35,13 +35,13 @@ contract EarnContract with Deployable, Ownable, Functions {
         require(msgDeposit >= self.minDeposit(), "Minimum deposit is not enough");
         require(msgDeposit <= self.maxDeposit(), "Maximum deposit exceeded");
 
-        self.deposit(self.meta, sender(), msg.upLine);
+        self.deposit(self.meta, sender(), msgDeposit, msg.upLine);
     }
 
 
     // --- getters ---
 
-    get fun meta(): ContractMeta {
+    get fun totalDeposit(): ContractMeta {
         return self.meta;
     }
 
