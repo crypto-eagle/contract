@@ -1,5 +1,5 @@
 import { SandboxContract, SendMessageResult, TreasuryContract } from '@ton/sandbox';
-import { BalanceInfo, MainContract } from '../../build/MainContract/tact_MainContract';
+import { Profile, EarnContract } from '../../build/EarnContract/tact_EarnContract';
 import { FounderContract } from "../../build/FounderContract/tact_FounderContract";
 import { expectHaveTran } from './expectations/expectHaveTran';
 import { expectHaveOnlyOneEvent, expectNotHaveEvents, expectHaveFailEvents } from './expectations/expectHaveEvent';
@@ -15,7 +15,7 @@ export interface ExpectHelpersType {
     haveOnlyOneEvent: (result: SendMessageResult, value: bigint) => void;
     notHaveEvents: (result: SendMessageResult) => void;
     haveFailEvents: (result: SendMessageResult) => void;
-    succeedDeposit: (upLine: Address | null) => Promise<BalanceInfo>;
+    succeedDeposit: (upLine: Address | null) => Promise<Profile | null>;
 }
 
 export interface FounderContractExpectHelpersType {
@@ -25,7 +25,7 @@ export interface FounderContractExpectHelpersType {
     haveStakeHolderTran: (stakeHolder: SandboxContract<TreasuryContract>, value: bigint, result: SendMessageResult) => void;
 }
 
-export const expectHelpers = (contract: SandboxContract<MainContract>, deployer: SandboxContract<TreasuryContract>): ExpectHelpersType => {
+export const expectHelpers = (contract: SandboxContract<EarnContract>, deployer: SandboxContract<TreasuryContract>): ExpectHelpersType => {
     return {
         haveTran: (result: SendMessageResult, value: bigint, success: boolean = true) => expectHaveTran(contract, deployer, result, value, success),
         haveOnlyOneEvent: (result: SendMessageResult, value: bigint) => expectHaveOnlyOneEvent(contract, deployer, result, value),

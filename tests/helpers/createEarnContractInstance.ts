@@ -1,9 +1,9 @@
 import '@ton/test-utils';
 import { Blockchain } from '@ton/sandbox';
-import { MainContract } from '../../build/MainContract/tact_MainContract';
+import { EarnContract } from '../../build/EarnContract/tact_EarnContract';
 import { minDeposit } from './consts';
 
-export const createContractInstance = async () => {
+export const createEarnContractInstance = async () => {
     const blockchain = await Blockchain.create();
     // blockchain.verbosity = {
     //     print: true,
@@ -14,7 +14,15 @@ export const createContractInstance = async () => {
 
     const founderContract = await blockchain.treasury('founder');
     const contract = blockchain.openContract(
-        await MainContract.fromInit(BigInt(Math.floor(Math.random() * 10000)), minDeposit, founderContract.address)
+        await EarnContract.fromInit(
+            BigInt(Math.floor(Math.random() * 10000)),
+            founderContract.address,
+            minDeposit,
+            100n,
+            310n,
+            10n,
+            1n
+        )
     );
     const deployer = await blockchain.treasury('deployer');
 

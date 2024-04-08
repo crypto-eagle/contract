@@ -7,9 +7,6 @@ export const topUpWithFounderFee = (contract: SandboxContract<FounderContract>, 
         {
             value,
         },
-        {
-            $$type: 'TopUpWithFounderFee',
-            amount: value,
-        },
+        null
     );
 };

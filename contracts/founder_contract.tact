@@ -1,6 +1,6 @@
 import "@stdlib/ownable";
 import "@stdlib/deploy";
-import "./helpers/messages.tact";
+import "./founder_contract_helpers/messages.tact";
 
 contract FounderContract with Deployable, Ownable {
     // TODO: Change storage costs value after tests phase
@@ -30,10 +30,6 @@ contract FounderContract with Deployable, Ownable {
 
     receive() {
         emit("Thanks for supporting us".asComment());
-    }
-
-    receive(msg: TopUpWithFounderFee) {
-        emit("Topped up with founder fee".asComment());
     }
 
     receive(msg: ClaimStakeHoldersRewards) {
@@ -70,7 +66,7 @@ contract FounderContract with Deployable, Ownable {
                 to: stakeHolder,
                 bounce: true,
                 value: rewardsAmount,
-                mode: SendRemainingValue// TODO: Should we ignore errors?
+                mode: SendPayGasSeparately
             }
         );
     }

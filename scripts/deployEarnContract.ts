@@ -1,9 +1,28 @@
-import { toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { EarnContract } from '../wrappers/EarnContract';
 import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
-    const earnContract = provider.open(await EarnContract.fromInit());
+    const contractId = BigInt(Math.floor(Math.random() * 10000));
+    // TODO: Fill constants
+    const founder: Address = Address.parse('/*_*/');
+    const minDeposit = toNano('10.0');
+    const maxDepositMultiplier = 100n;
+    const rewardsPercent = 310n;
+    const depositDirectUpLineBonusPercent = 10n;
+    const depositFounderBonusPercent = 1n;
+
+    const earnContract = provider.open(
+        await EarnContract.fromInit(
+            contractId,
+            founder,
+            minDeposit,
+            maxDepositMultiplier,
+            rewardsPercent,
+            depositDirectUpLineBonusPercent,
+            depositFounderBonusPercent,
+        )
+    );
 
     await earnContract.send(
         provider.sender(),
