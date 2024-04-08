@@ -15,7 +15,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
-    const investorProfile = await earnContract.getInvestorProfile();
+    const investorProfile = await earnContract.getInvestorProfile(address);
 
     ui.clearActionPrompt();
     ui.write('investorProfile: ' + JSON.stringify(investorProfile));

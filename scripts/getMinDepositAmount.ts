@@ -15,7 +15,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
-    const minDepositAmount = await earnContract.getMinDepositAmount();
+    const minDepositAmount = await earnContract.getMinDepositAmount(address);
 
     ui.clearActionPrompt();
     ui.write('minDepositAmount: ' + fromNano(minDepositAmount));

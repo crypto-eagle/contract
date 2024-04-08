@@ -3,7 +3,7 @@ import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { EarnContract } from '../wrappers/EarnContract';
 import { createEarnContractInstance, expectHelpers, ExpectHelpersType, methodHelpers, MethodHelpersType } from './helpers';
 import { minDeposit, ExitCodes } from './helpers/consts';
-import { toNano } from '@ton/core';
+import { Address, fromNano, toNano } from '@ton/core';
 import { expectHaveTran, expectHaveTranWith } from './helpers/expectations/expectHaveTran';
 import { expectHaveFailEvents } from './helpers/expectations/expectHaveEvent';
 
@@ -27,6 +27,24 @@ describe('EarnContract', () => {
     it('should deploy', async () => {
         // the check is done inside beforeEach
         // blockchain and mainContract are ready to use
+    });
+
+    it('should return min deposit', async () => {
+        const minDeposit = await contract.getMinDepositAmount(deployer.address);
+        console.log('minDeposit', fromNano(minDeposit));
+    });
+
+    it('should return min deposit', async () => {
+        const maxDeposit = await contract.getMaxDepositAmount(deployer.address);
+        console.log('maxDeposit', fromNano(maxDeposit));
+    });
+
+    it('should deposit', async () => {
+        const value = toNano(10);
+        const result = await methodHelper.deposit(value, null);
+        expectHaveTran(contract, deployer, result, value, true);
+        const investorProfile = await contract.getInvestorProfile(deployer.address);
+        console.log('investorProfile', investorProfile);
     });
 
     describe('deposit', () => {

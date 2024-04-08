@@ -20,8 +20,17 @@ struct Investor {
     upLine: Address;
     round: Round;
     referralBonus: Int as coins;
+    totalDeposit: Int as coins;
+    totalClaimedRewards: Int as coins;
+    totalReferralBonus: Int as coins;
 }
 
 struct Profile {
-    referralBonus: Int as coins;
+    totalDeposit: Int as coins;
+    totalClaimedRewards: Int as coins;
+    totalReferralBonus: Int as coins;
+    currentRound: Int as uint32;
+    currentDeposit: Int as coins;
+    currentReferralBonus: Int as coins;
+    currentDailyIncome: Int as coins;
 }

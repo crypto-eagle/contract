@@ -8,7 +8,7 @@ import { topUpWithFounderFee } from './methods/topUpWithFounderFee';
 import { claimStakeHoldersRewards } from './methods/claimStakeHoldersRewards';
 
 export interface MethodHelpersType {
-    getInvestorProfile: () => Promise<Profile | null>;
+    getInvestorProfile: (address: Address) => Promise<Profile | null>;
     deposit: (value: bigint, upLine: Address | null) => Promise<SendMessageResult>;
 }
 
@@ -19,7 +19,7 @@ export interface FounderContractMethodHelpersType {
 
 export const methodHelpers = (contract: SandboxContract<EarnContract>, deployer: SandboxContract<TreasuryContract>): MethodHelpersType => {
     return {
-        getInvestorProfile: () => getInvestorProfile(contract),
+        getInvestorProfile: (address: Address) => getInvestorProfile(contract, address),
         deposit: (value: bigint, upLine: Address | null) => deposit(contract, deployer, value, upLine),
     };
 };

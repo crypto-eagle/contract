@@ -15,7 +15,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
-    const maxDepositAmount = await earnContract.getMaxDepositAmount();
+    const maxDepositAmount = await earnContract.getMaxDepositAmount(address);
 
     ui.clearActionPrompt();
     ui.write('maxDepositAmount: ' + fromNano(maxDepositAmount));

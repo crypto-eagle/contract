@@ -15,7 +15,10 @@ trait Functions {
             address: address,
             upLine: upLine,
             round: self.createRound(0, 0, now(), now(), true),
-            referralBonus: 0
+            referralBonus: 0,
+            totalDeposit: 0,
+            totalClaimedRewards: 0,
+            totalReferralBonus: 0
         };
     }
 
@@ -64,34 +67,6 @@ trait Functions {
         return multiplier * initialMaxDepositAmount;
     }
 
-    fun deposit(investor: Investor, amount: Int, contractMeta: ContractMeta, upLine: Investor?) {
-        require(investor.round.isClaimed, "Claim rewards before deposit");
-        require(
-            amount >= self.calcMinDepositAmount(investor, contractMeta),
-            "Deposit amount is not enough"
-        );
-        require(
-            amount <= self.calcMaxDepositAmount(investor, contractMeta),
-            "Maximum deposit limit exceeded"
-        );
-
-        investor.round = self.createRound(investor.round.serial + 1, amount, now(), 0, false);
-
-        self.enrollUpLineDepositBonus(investor, contractMeta, upLine);
-        self.enrollFounderDepositBonus(investor, contractMeta);
-    }
-
-    fun enrollUpLineDepositBonus(investor: Investor, contractMeta: ContractMeta, upLine: Investor?) {
-        if (upLine == null) {
-            return;
-        }
-
-        let depositDirectBonus: Int = investor.round.amount * contractMeta.depositDirectUpLineBonusPercent / 100;
-        let upLineInvestor: Investor = upLine!!;
-
-        upLineInvestor.referralBonus = upLineInvestor.referralBonus + depositDirectBonus;
-    }
-
     fun enrollFounderDepositBonus(investor: Investor, contractMeta: ContractMeta) {
         let everyDepositBonus: Int = investor.round.amount * contractMeta.depositFounderBonusPercent / 100;
         let bonusAmount: Int = everyDepositBonus;
@@ -127,24 +102,6 @@ trait Functions {
 
     fun calcMaxRewards(investor: Investor, contractMeta: ContractMeta): Int {
         return investor.round.amount * contractMeta.rewardsPercent / 100;
-    }
-
-    fun claimRewards(investor: Investor, contractMeta: ContractMeta): Int {
-        require(!investor.round.isClaimed, "You already claimed rewards");
-
-        let maxRewards: Int = self.calcMaxRewards(investor, contractMeta);
-        let dailyIncome: Int = self.calcDailyIncome(investor, contractMeta);
-        let referralBonus: Int = investor.referralBonus;
-
-        require((dailyIncome + referralBonus) >= maxRewards, "Your rewards amount is not enough to claim");
-
-        investor.round.isClaimed = true;
-        investor.round.claimedAt = now();
-        investor.referralBonus = referralBonus - (maxRewards - dailyIncome);
-
-        self.payInvestorRewards(investor, maxRewards);
-
-        return maxRewards;
     }
 
     fun payInvestorRewards(investor: Investor, rewardsAmount: Int) {

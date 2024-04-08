@@ -57,55 +57,90 @@ contract EarnContract with Deployable, Ownable, Functions {
         let depositAmount: Int = context().value;
         let investor: Investor = self.getOrCreateInvestorFromSender(self.resolveUpLine(msg, self.meta));
 
-        self.deposit(investor, depositAmount, self.meta, self.investors.get(investor.upLine));
+        require(investor.round.isClaimed, "Claim rewards before deposit");
+        require(
+            depositAmount >= self.calcMinDepositAmount(investor, self.meta),
+            "Deposit amount is not enough"
+        );
+        require(
+            depositAmount <= self.calcMaxDepositAmount(investor, self.meta),
+            "Maximum deposit limit exceeded"
+        );
+
+        investor.round = self.createRound(investor.round.serial + 1, depositAmount, now(), 0, false);
+        investor.totalDeposit = investor.totalDeposit + depositAmount;
+        self.investors.set(investor.address, investor);
+
+        self.enrollUpLineDepositBonus(investor, self.meta, self.investors.get(investor.upLine));
+        self.enrollFounderDepositBonus(investor, self.meta);
 
         emit("Deposited".asComment());
     }
 
     receive(msg: ClaimRewards) {
-        let investor: Investor = self.tryToResolveInvestorFromSender();
+        let investor: Investor = self.tryToResolveInvestor(sender());
 
-        let rewardsAmount: Int = self.claimRewards(investor, self.meta);
+        require(!investor.round.isClaimed, "You already claimed rewards");
 
-        self.enrollClaimRewardsBonus(investor, rewardsAmount, 1);
+        let maxRewards: Int = self.calcMaxRewards(investor, self.meta);
+        let dailyIncome: Int = self.calcDailyIncome(investor, self.meta);
+        let referralBonus: Int = investor.referralBonus;
+
+        require((dailyIncome + referralBonus) >= maxRewards, "Your rewards amount is not enough to claim");
+
+        investor.round.isClaimed = true;
+        investor.round.claimedAt = now();
+        investor.referralBonus = referralBonus - (maxRewards - dailyIncome);
+        investor.totalClaimedRewards = investor.totalClaimedRewards + maxRewards;
+        self.investors.set(investor.address, investor);
+
+        self.payInvestorRewards(investor, maxRewards);
+
+        self.enrollClaimRewardsBonus(investor, maxRewards, 1);
 
         emit("Claimed rewards".asComment());
     }
 
     // --- getters ---
 
-    get fun minDepositAmount(): Int {
-        return self.calcMinDepositAmount(self.resolveInvestorFromSender(), self.meta);
+    get fun minDepositAmount(address: Address): Int {
+        return self.calcMinDepositAmount(self.resolveInvestor(address), self.meta);
     }
 
-    get fun maxDepositAmount(): Int {
-        return self.calcMaxDepositAmount(self.resolveInvestorFromSender(), self.meta);
+    get fun maxDepositAmount(address: Address): Int {
+        return self.calcMaxDepositAmount(self.resolveInvestor(address), self.meta);
     }
 
-    get fun investorProfile(): Profile {
-        let investor: Investor = self.tryToResolveInvestorFromSender();
+    get fun investorProfile(address: Address): Profile {
+        let investor: Investor = self.tryToResolveInvestor(address);
 
         return Profile {
-            referralBonus: investor.referralBonus
+            totalDeposit: investor.totalDeposit,
+            totalClaimedRewards: investor.totalClaimedRewards,
+            totalReferralBonus: investor.totalReferralBonus,
+            currentRound: investor.round.serial,
+            currentDeposit: investor.round.amount,
+            currentReferralBonus: investor.referralBonus,
+            currentDailyIncome: self.calcDailyIncome(investor, self.meta)
         };
     }
 
     // --- functions ---
 
-    fun tryToResolveInvestorFromSender(): Investor {
-        let investor: Investor? = self.resolveInvestorFromSender();
+    fun tryToResolveInvestor(address: Address): Investor {
+        let investor: Investor? = self.resolveInvestor(address);
 
-        require((investor != null), "You are not registered");
+        require((investor != null), "Investor is not registered");
 
         return investor!!;
     }
 
-    fun resolveInvestorFromSender(): Investor? {
-        return self.investors.get(sender());
+    fun resolveInvestor(address: Address): Investor? {
+        return self.investors.get(address);
     }
 
     fun getOrCreateInvestorFromSender(upLine: Address): Investor {
-        let investor: Investor? = self.resolveInvestorFromSender();
+        let investor: Investor? = self.resolveInvestor(sender());
 
         if (null != investor) {
             return investor!!;
@@ -117,6 +152,19 @@ contract EarnContract with Deployable, Ownable, Functions {
         self.investors.set(newInvestorAddress, newInvestor);
 
         return newInvestor;
+    }
+
+    fun enrollUpLineDepositBonus(investor: Investor, contractMeta: ContractMeta, upLine: Investor?) {
+        if (upLine == null) {
+            return;
+        }
+
+        let depositDirectBonus: Int = investor.round.amount * contractMeta.depositDirectUpLineBonusPercent / 100;
+        let upLineInvestor: Investor = upLine!!;
+
+        upLineInvestor.referralBonus = upLineInvestor.referralBonus + depositDirectBonus;
+        upLineInvestor.totalReferralBonus = upLineInvestor.totalReferralBonus + depositDirectBonus;
+        self.investors.set(upLineInvestor.address, upLineInvestor);
     }
 
     fun enrollClaimRewardsBonus(investor: Investor, rewardsAmount: Int, level: Int) {
@@ -141,6 +189,8 @@ contract EarnContract with Deployable, Ownable, Functions {
         let upLineInvestor: Investor = self.investors.get(investor.upLine)!!;
 
         upLineInvestor.referralBonus = upLineInvestor.referralBonus + bonusAmount;
+        upLineInvestor.totalReferralBonus = upLineInvestor.totalReferralBonus + bonusAmount;
+        self.investors.set(upLineInvestor.address, upLineInvestor);
 
         self.enrollClaimRewardsBonus(upLineInvestor, rewardsAmount, level + 1);
     }
