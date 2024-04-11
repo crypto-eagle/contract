@@ -11,8 +11,8 @@ struct Round {
     serial: Int as uint32;
     amount: Int as coins;
     createdAt: Int as uint32;
-    claimedAt: Int as uint32;
     isClaimed: Bool;
+    claimedDailyIncome: Int as coins;
 }
 
 struct Investor {
@@ -29,8 +29,11 @@ struct Profile {
     totalDeposit: Int as coins;
     totalClaimedRewards: Int as coins;
     totalReferralBonus: Int as coins;
+    depositIsAvailable: Bool;
     currentRound: Int as uint32;
+    currentRoundDurationInDays: Int as uint32;
     currentDeposit: Int as coins;
-    currentReferralBonus: Int as coins;
-    currentDailyIncome: Int as coins;
+    currentClaimedRewards: Int as coins;
+    currentClaimableRewards: Int as coins;
+    currentMaxRewards: Int as coins;
 }

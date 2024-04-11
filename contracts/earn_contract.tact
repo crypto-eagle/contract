@@ -57,7 +57,7 @@ contract EarnContract with Deployable, Ownable, Functions {
         let depositAmount: Int = context().value;
         let investor: Investor = self.getOrCreateInvestorFromSender(self.resolveUpLine(msg, self.meta));
 
-        require(investor.round.isClaimed, "Claim rewards before deposit");
+        require(self.isDepositAvailable(investor), "Claim rewards before deposit");
         require(
             depositAmount >= self.calcMinDepositAmount(investor, self.meta),
             "Deposit amount is not enough"
@@ -67,11 +67,11 @@ contract EarnContract with Deployable, Ownable, Functions {
             "Maximum deposit limit exceeded"
         );
 
-        investor.round = self.createRound(investor.round.serial + 1, depositAmount, now(), 0, false);
+        investor.round = self.createRound(investor.round.serial + 1, depositAmount, now(), false);
         investor.totalDeposit = investor.totalDeposit + depositAmount;
         self.investors.set(investor.address, investor);
 
-        self.enrollUpLineDepositBonus(investor, self.meta, self.investors.get(investor.upLine));
+        self.enrollUpLineDepositBonus(investor, self.investors.get(investor.upLine));
         self.enrollFounderDepositBonus(investor, self.meta);
 
         emit("Deposited".asComment());
@@ -82,21 +82,24 @@ contract EarnContract with Deployable, Ownable, Functions {
 
         require(!investor.round.isClaimed, "You already claimed rewards");
 
-        let maxRewards: Int = self.calcMaxRewards(investor, self.meta);
-        let dailyIncome: Int = self.calcDailyIncome(investor, self.meta);
+        let claimableDailyIncome: Int = self.calcDailyIncome(investor, self.meta) - investor.round.claimedDailyIncome;
         let referralBonus: Int = investor.referralBonus;
+        let claimableRewards: Int = self.calcClaimableRewards(investor, self.meta, (claimableDailyIncome + referralBonus));
 
-        require((dailyIncome + referralBonus) >= maxRewards, "Your rewards amount is not enough to claim");
+        require(claimableRewards > 0, "Your rewards amount is not enough to claim");
 
-        investor.round.isClaimed = true;
-        investor.round.claimedAt = now();
-        investor.referralBonus = referralBonus - (maxRewards - dailyIncome);
-        investor.totalClaimedRewards = investor.totalClaimedRewards + maxRewards;
+        self.payInvestorRewards(investor, claimableRewards);
+
+        investor.round.claimedDailyIncome = investor.round.claimedDailyIncome + claimableDailyIncome;
+        investor.referralBonus = referralBonus - (claimableRewards - claimableDailyIncome);
+        investor.totalClaimedRewards = investor.totalClaimedRewards + claimableRewards;
+        if (investor.totalClaimedRewards == self.calcMaxRewards(investor.totalDeposit, self.meta)) {
+            investor.round.isClaimed = true;
+        }
+
         self.investors.set(investor.address, investor);
 
-        self.payInvestorRewards(investor, maxRewards);
-
-        self.enrollClaimRewardsBonus(investor, maxRewards, 1);
+        self.enrollClaimRewardsBonus(investor, claimableRewards, 1);
 
         emit("Claimed rewards".asComment());
     }
@@ -113,15 +116,21 @@ contract EarnContract with Deployable, Ownable, Functions {
 
     get fun investorProfile(address: Address): Profile {
         let investor: Investor = self.tryToResolveInvestor(address);
+        let claimableDailyIncome: Int = self.calcDailyIncome(investor, self.meta) - investor.round.claimedDailyIncome;
+        let currentClaimableRewards: Int = self.calcClaimableRewards(investor, self.meta, (claimableDailyIncome + investor.referralBonus));
+        let currentClaimedRewards: Int = investor.totalClaimedRewards - self.calcMaxRewards(investor.totalDeposit - investor.round.amount, self.meta);
 
         return Profile {
             totalDeposit: investor.totalDeposit,
             totalClaimedRewards: investor.totalClaimedRewards,
             totalReferralBonus: investor.totalReferralBonus,
+            depositIsAvailable: self.isDepositAvailable(investor),
             currentRound: investor.round.serial,
+            currentRoundDurationInDays: min(self.calcRoundDurationInDays(investor), self.meta.rewardsPercent),
             currentDeposit: investor.round.amount,
-            currentReferralBonus: investor.referralBonus,
-            currentDailyIncome: self.calcDailyIncome(investor, self.meta)
+            currentClaimedRewards: currentClaimedRewards,
+            currentClaimableRewards: currentClaimableRewards,
+            currentMaxRewards: self.calcMaxRewards(investor.round.amount, self.meta)
         };
     }
 
@@ -154,12 +163,12 @@ contract EarnContract with Deployable, Ownable, Functions {
         return newInvestor;
     }
 
-    fun enrollUpLineDepositBonus(investor: Investor, contractMeta: ContractMeta, upLine: Investor?) {
+    fun enrollUpLineDepositBonus(investor: Investor, upLine: Investor?) {
         if (upLine == null) {
             return;
         }
 
-        let depositDirectBonus: Int = investor.round.amount * contractMeta.depositDirectUpLineBonusPercent / 100;
+        let depositDirectBonus: Int = investor.round.amount * self.meta.depositDirectUpLineBonusPercent / 100;
         let upLineInvestor: Investor = upLine!!;
 
         upLineInvestor.referralBonus = upLineInvestor.referralBonus + depositDirectBonus;

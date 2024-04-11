@@ -14,7 +14,7 @@ trait Functions {
         return Investor {
             address: address,
             upLine: upLine,
-            round: self.createRound(0, 0, now(), now(), true),
+            round: self.createRound(0, 0, now(), true),
             referralBonus: 0,
             totalDeposit: 0,
             totalClaimedRewards: 0,
@@ -22,13 +22,13 @@ trait Functions {
         };
     }
 
-    fun createRound(serial: Int, amount: Int, createdAt: Int, claimedAt: Int, isClaimed: Bool): Round {
+    fun createRound(serial: Int, amount: Int, createdAt: Int, isClaimed: Bool): Round {
         return Round {
             serial: serial,
             amount: amount,
             createdAt: createdAt,
-            claimedAt: claimedAt,
-            isClaimed: isClaimed
+            isClaimed: isClaimed,
+            claimedDailyIncome: 0
         };
     }
 
@@ -87,21 +87,18 @@ trait Functions {
 
         return min(
             (investor.round.amount * self.calcRoundDurationInDays(investor) / 100),
-            self.calcMaxRewards(investor, contractMeta)
+            self.calcMaxRewards(investor.round.amount, contractMeta)
         );
     }
 
     fun calcRoundDurationInDays(investor: Investor): Int {
         let durationInSeconds: Int = now() - investor.round.createdAt;
-        if (investor.round.isClaimed) {
-            durationInSeconds = investor.round.claimedAt - investor.round.createdAt;
-        }
 
         return durationInSeconds / (60 * 60 * 24);
     }
 
-    fun calcMaxRewards(investor: Investor, contractMeta: ContractMeta): Int {
-        return investor.round.amount * contractMeta.rewardsPercent / 100;
+    fun calcMaxRewards(amount: Int, contractMeta: ContractMeta): Int {
+        return amount * contractMeta.rewardsPercent / 100;
     }
 
     fun payInvestorRewards(investor: Investor, rewardsAmount: Int) {
@@ -123,6 +120,17 @@ trait Functions {
                 value: bonusAmount,
                 mode: SendPayGasSeparately
             }
+        );
+    }
+
+    fun isDepositAvailable(investor: Investor): Bool {
+        return investor.round.isClaimed;
+    }
+
+    fun calcClaimableRewards(investor: Investor, contractMeta: ContractMeta, dailyIncomeAndBonus: Int): Int {
+        return min(
+            (self.calcMaxRewards(investor.totalDeposit, contractMeta) - investor.totalClaimedRewards),
+            dailyIncomeAndBonus
         );
     }
 
