@@ -47,6 +47,11 @@ describe('EarnContract', () => {
         console.log('investorProfile', investorProfile);
     });
 
+    it('should return profile', async () => {
+        const result = await methodHelper.getInvestorProfile(deployer.address);
+        expect(result).not.toBeNull();
+    });
+
     describe('deposit', () => {
         it('should not increase balance because of min deposit', async () => {
             /*const balanceBefore = await methodHelper.getMyBalanceInfo();

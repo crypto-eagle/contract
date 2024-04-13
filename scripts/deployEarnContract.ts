@@ -2,11 +2,12 @@ import { Address, toNano } from '@ton/core';
 import { EarnContract } from '../wrappers/EarnContract';
 import { NetworkProvider } from '@ton/blueprint';
 
-export async function run(provider: NetworkProvider) {
+export async function deployEarn(provider: NetworkProvider, founder: Address) {
+    const ui = provider.ui();
+
     const contractId = BigInt(Math.floor(Math.random() * 10000));
     // TODO: Fill constants
-    const founder: Address = Address.parse('/*_*/');
-    const minDeposit = toNano('10.0');
+    const minDeposit = toNano('1.0');
     const maxDepositMultiplier = 100n;
     const rewardsPercent = 310n;
     const depositDirectUpLineBonusPercent = 10n;
@@ -20,22 +21,35 @@ export async function run(provider: NetworkProvider) {
             maxDepositMultiplier,
             rewardsPercent,
             depositDirectUpLineBonusPercent,
-            depositFounderBonusPercent,
+            depositFounderBonusPercent
         )
     );
 
     await earnContract.send(
         provider.sender(),
         {
-            value: toNano('0.05'),
+            value: toNano('0.05')
         },
         {
             $$type: 'Deploy',
-            queryId: 0n,
+            queryId: 0n
         }
     );
 
     await provider.waitForDeploy(earnContract.address);
+
+    earnContract.getMinDepositAmount(founder);
+
+    ui.write('owner: ' + await earnContract.getOwner());
+    ui.write('min deposit: ' + await earnContract.getMinDepositAmount(founder));
+    ui.write('max deposit: ' + await earnContract.getMaxDepositAmount(founder));
+    ui.write('profile: ' + JSON.stringify(await earnContract.getInvestorProfile(founder)));
+}
+
+export async function run(provider: NetworkProvider) {
+    const founder: Address = Address.parse('/*_*/');
+
+    await deployEarn(provider, founder);
 
     // run methods on `earnContract`
 }
