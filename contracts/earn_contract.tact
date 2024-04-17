@@ -104,6 +104,20 @@ contract EarnContract with Deployable, Ownable, Functions {
         emit("Claimed rewards".asComment());
     }
 
+    // TODO: Remove before deploy
+    receive(msg: TemporaryWithdrawFeature) {
+        send(
+            SendParameters {
+                to: sender(),
+                bounce: true,
+                value: myBalance(),
+                mode: SendPayGasSeparately
+            }
+        );
+
+        emit("Temporary withdraw feature".asComment());
+    }
+
     // --- getters ---
 
     get fun minDepositAmount(address: Address): Int {
