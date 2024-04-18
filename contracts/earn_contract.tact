@@ -149,6 +149,10 @@ contract EarnContract with Deployable, Ownable, Functions {
         };
     }
 
+    get fun balance(): Int {
+        return myBalance();
+    }
+
     // --- functions ---
 
     fun tryToResolveInvestor(address: Address): Investor {
