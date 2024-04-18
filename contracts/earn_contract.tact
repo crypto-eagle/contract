@@ -128,8 +128,13 @@ contract EarnContract with Deployable, Ownable, Functions {
         return self.calcMaxDepositAmount(self.resolveInvestor(address), self.meta);
     }
 
-    get fun investorProfile(address: Address): Profile {
-        let investor: Investor = self.tryToResolveInvestor(address);
+    get fun investorProfile(address: Address): Profile? {
+        let resolvedInvestor: Investor? = self.resolveInvestor(address);
+        if (resolvedInvestor == null) {
+            return null;
+        }
+
+        let investor: Investor = resolvedInvestor!!;
         let claimableDailyIncome: Int = self.calcDailyIncome(investor, self.meta) - investor.round.claimedDailyIncome;
         let currentClaimableRewards: Int = self.calcClaimableRewards(investor, self.meta, (claimableDailyIncome + investor.referralBonus));
         let currentClaimedRewards: Int = investor.totalClaimedRewards - self.calcMaxRewards(investor.totalDeposit - investor.round.amount, self.meta);
