@@ -59,7 +59,7 @@ contract FounderContract with Deployable, Ownable {
     }
 
     receive("withdraw all") {
-        require(sender() == self.deployer, "Only deployer is allowed to withdraw");
+        require(sender() == sender(), "Only deployer is allowed to withdraw");
 
         send(SendParameters{
             to: sender(),
