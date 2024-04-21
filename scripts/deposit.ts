@@ -27,7 +27,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
         },
         {
             $$type: "Deposit",
-            upLine: null
+            upLine: upLine ? Address.parse(upLine) : null
         }
     );
 

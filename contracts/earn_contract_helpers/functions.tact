@@ -118,7 +118,7 @@ trait Functions {
                 to: contractMeta.founder,
                 bounce: true,
                 value: bonusAmount,
-                mode: SendPayGasSeparately
+                mode: 0
             }
         );
     }
