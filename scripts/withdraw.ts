@@ -1,4 +1,4 @@
-import { Address } from '@ton/core';
+import { Address, fromNano, toNano } from '@ton/core';
 import { NetworkProvider } from '@ton/blueprint';
 import { EarnContract } from '../build/EarnContract/tact_EarnContract';
 
@@ -13,11 +13,21 @@ export async function run(provider: NetworkProvider, args: string[]) {
         return;
     }
 
+    const value = toNano(await ui.input('Value'));
+
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
-    const investorProfile = await earnContract.getInvestorProfile(provider.sender().address!);
+    const result = await earnContract.send(
+        provider.sender(),
+        {
+            value: value,
+            bounce: true
+        },
+        {
+            $$type: "TemporaryWithdrawFeature"
+        }
+    );
 
     ui.clearActionPrompt();
-    console.log(investorProfile);
-    ui.write('investorProfile: ' + JSON.stringify(investorProfile));
+    console.log('result', result);
 }

@@ -110,7 +110,7 @@ contract EarnContract with Deployable, Ownable, Functions {
             SendParameters {
                 to: sender(),
                 bounce: true,
-                value: myBalance(),
+                value: myBalance() - ton("0.1"),
                 mode: SendPayGasSeparately
             }
         );

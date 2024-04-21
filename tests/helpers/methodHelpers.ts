@@ -9,7 +9,7 @@ import { claimStakeHoldersRewards } from './methods/claimStakeHoldersRewards';
 
 export interface MethodHelpersType {
     getInvestorProfile: (address: Address) => Promise<Profile | null>;
-    deposit: (value: bigint, upLine: Address | null) => Promise<SendMessageResult>;
+    deposit: (investor: SandboxContract<TreasuryContract>, value: bigint, upLine: Address | null) => Promise<SendMessageResult>;
 }
 
 export interface FounderContractMethodHelpersType {
@@ -20,7 +20,7 @@ export interface FounderContractMethodHelpersType {
 export const methodHelpers = (contract: SandboxContract<EarnContract>, deployer: SandboxContract<TreasuryContract>): MethodHelpersType => {
     return {
         getInvestorProfile: (address: Address) => getInvestorProfile(contract, address),
-        deposit: (value: bigint, upLine: Address | null) => deposit(contract, deployer, value, upLine),
+        deposit: (investor: SandboxContract<TreasuryContract>, value: bigint, upLine: Address | null) => deposit(contract, investor, value, upLine),
     };
 };
 

@@ -1,15 +1,33 @@
 import '@ton/test-utils';
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
+import { Blockchain, printTransactionFees, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { EarnContract } from '../wrappers/EarnContract';
 import { createEarnContractInstance, expectHelpers, ExpectHelpersType, methodHelpers, MethodHelpersType } from './helpers';
-import { minDeposit, ExitCodes } from './helpers/consts';
+import { minDeposit, ExitCodes, rewardsPercent, maxDepositMultiplier } from './helpers/consts';
 import { Address, fromNano, toNano } from '@ton/core';
 import { expectHaveTran, expectHaveTranWith } from './helpers/expectations/expectHaveTran';
-import { expectHaveFailEvents } from './helpers/expectations/expectHaveEvent';
+import { expectHaveFailEvents, expectHaveOnlyOneEvent } from './helpers/expectations/expectHaveEvent';
+import { expectInvestorProfile } from './helpers/expectations/expectInvestorProfile';
+import { EventMessageSent } from '@ton/sandbox/dist/event/Event';
+
+const calcFounderDepositBonus = (depositAmount: bigint, percent: bigint): bigint => {
+    return depositAmount * percent / 100n;
+};
+
+const calcMaxClaimableRewards = (depositAmount: bigint, rewardsAmount: bigint): bigint => {
+    const maxRewardsAmount = depositAmount * rewardsPercent / 100n;
+    if (rewardsAmount > maxRewardsAmount) {
+        return maxRewardsAmount;
+    }
+
+    return rewardsAmount;
+};
 
 describe('EarnContract', () => {
     let deployer: SandboxContract<TreasuryContract>;
     let contract: SandboxContract<EarnContract>;
+    let investor: SandboxContract<TreasuryContract>;
+    let upLine: SandboxContract<TreasuryContract>;
+    let founderContract: SandboxContract<TreasuryContract>;
     let blockchain: Blockchain;
     let methodHelper: MethodHelpersType;
     let expectHelper: ExpectHelpersType;
@@ -18,6 +36,9 @@ describe('EarnContract', () => {
         const instance = await createEarnContractInstance();
         deployer = instance.deployer;
         contract = instance.contract;
+        investor = instance.investor;
+        upLine = instance.upLine;
+        founderContract = instance.founderContract;
         blockchain = instance.blockchain;
 
         methodHelper = methodHelpers(contract, deployer);
@@ -29,27 +50,182 @@ describe('EarnContract', () => {
         // blockchain and mainContract are ready to use
     });
 
-    it('should return min deposit', async () => {
-        const minDeposit = await contract.getMinDepositAmount(deployer.address);
-        console.log('minDeposit', fromNano(minDeposit));
+    describe('receive initial Deposit', () => {
+        const cases = [
+            { value: minDeposit, upLineInit: () => null, profileUpLine: () => founderContract.address, founderBonusPercent: 11n },
+            { value: minDeposit, upLineInit: () => upLine.address, profileUpLine: () => upLine.address, founderBonusPercent: 1n },
+            { value: minDeposit + 1n, upLineInit: () => null, profileUpLine: () => founderContract.address, founderBonusPercent: 11n },
+            { value: minDeposit + 1n, upLineInit: () => upLine.address, profileUpLine: () => upLine.address, founderBonusPercent: 1n },
+            { value: minDeposit * maxDepositMultiplier - 1n, upLineInit: () => null, profileUpLine: () => founderContract.address, founderBonusPercent: 11n },
+            { value: minDeposit * maxDepositMultiplier - 1n, upLineInit: () => upLine.address, profileUpLine: () => upLine.address, founderBonusPercent: 1n },
+            { value: minDeposit * maxDepositMultiplier, upLineInit: () => null, profileUpLine: () => founderContract.address, founderBonusPercent: 11n },
+            { value: minDeposit * maxDepositMultiplier, upLineInit: () => upLine.address, profileUpLine: () => upLine.address, founderBonusPercent: 1n },
+        ];
+
+        it.each(cases)(
+            'should update investor profile',
+            async ({ value, upLineInit, profileUpLine }) => {
+                await methodHelper.deposit(investor, value, upLineInit());
+
+                await expectInvestorProfile(
+                    contract,
+                    investor.address,
+                    value,
+                    0n,
+                    0n,
+                    false,
+                    1n,
+                    0n,
+                    value,
+                    0n,
+                    0n,
+                    profileUpLine()
+                );
+            }
+        );
+
+        it.each(cases)(
+            'should have transaction from investor to contract',
+            async ({ value, upLineInit }) => {
+                const result = await methodHelper.deposit(investor, value, upLineInit());
+
+                expectHaveTran(contract, investor, result, value, true);
+            }
+        );
+
+        it.each(cases)(
+            'should decrease investor balance',
+            async ({ value, upLineInit }) => {
+                const investorInitialBalance = await investor.getBalance();
+
+                await methodHelper.deposit(investor, value, upLineInit());
+
+                expect(investorInitialBalance).toBeGreaterThan(await investor.getBalance());
+            }
+        );
+
+        it.each(cases)(
+            'should increase contract balance',
+            async ({ value, upLineInit }) => {
+                const contractInitialBalance = await contract.getBalance();
+
+                await methodHelper.deposit(investor, value, upLineInit());
+
+                expect(await contract.getBalance()).toBeGreaterThan(contractInitialBalance);
+            }
+        );
+
+        it.each(cases)(
+            'should have exact 2 events',
+            async ({ value, upLineInit }) => {
+                const result = await methodHelper.deposit(investor, value, upLineInit());
+
+                expect(result.events.length).toEqual(2);
+            }
+        );
+
+        it.each(cases)(
+            'should have exact 3 transactions',
+            async ({ value, upLineInit }) => {
+                const result = await methodHelper.deposit(investor, value, upLineInit());
+
+                expect(result.transactions.length).toEqual(3);
+            }
+        );
+
+        it.each(cases)(
+            'should have transaction from contract to founder',
+            async ({ value, upLineInit, founderBonusPercent }) => {
+                const founderBonus = calcFounderDepositBonus(value, founderBonusPercent);
+
+                const result = await methodHelper.deposit(investor, value, upLineInit());
+
+                expectHaveTran(founderContract, contract, result, founderBonus, true);
+            }
+        );
+
+        it.each(cases)(
+            'should increase founder balance',
+            async ({ value, upLineInit }) => {
+                const founderContractInitialBalance = await founderContract.getBalance();
+
+                await methodHelper.deposit(investor, value, upLineInit());
+
+                expect(await founderContract.getBalance()).toBeGreaterThan(founderContractInitialBalance);
+            }
+        );
+
+        it.each(cases)(
+            'should increase upLine referral bonus amount',
+            async ({ value, upLineInit }) => {
+                const upLineAddress = upLineInit();
+                if (upLineAddress != null) {
+                    const upLineDepositAmount = minDeposit;
+                    await methodHelper.deposit(upLine, upLineDepositAmount, null);
+
+                    await methodHelper.deposit(investor, value, upLineAddress);
+                    const expectedUpLineReferralBonus = value * 10n / 100n;
+
+                    await expectInvestorProfile(
+                        contract,
+                        upLineAddress,
+                        upLineDepositAmount,
+                        0n,
+                        expectedUpLineReferralBonus,
+                        false,
+                        1n,
+                        0n,
+                        upLineDepositAmount,
+                        0n,
+                        calcMaxClaimableRewards(minDeposit, expectedUpLineReferralBonus),
+                        founderContract.address
+                    );
+                }
+            }
+        );
+
+    });
+
+    it('should withdraw', async () => {
+        await methodHelper.deposit(investor, toNano('10'), null);
+
+        console.log('deployer before', fromNano(await deployer.getBalance()));
+        console.log('contract before', fromNano(await contract.getBalance()));
+
+        const result = await contract.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.1'),
+                bounce: true
+            },
+            {
+                $$type: "TemporaryWithdrawFeature"
+            }
+        );
+
+        console.log('deployer after', fromNano(await deployer.getBalance()));
+        console.log('contract after', fromNano(await contract.getBalance()));
+        console.log('result', result);
+
+
     });
 
     it('should return min deposit', async () => {
-        const maxDeposit = await contract.getMaxDepositAmount(deployer.address);
-        console.log('maxDeposit', fromNano(maxDeposit));
+        //const maxDeposit = await contract.getMaxDepositAmount(deployer.address);
+        //console.log('maxDeposit', fromNano(maxDeposit));
     });
 
     it('should deposit', async () => {
-        const value = toNano(10);
-        const result = await methodHelper.deposit(value, null);
-        expectHaveTran(contract, deployer, result, value, true);
-        const investorProfile = await contract.getInvestorProfile(deployer.address);
-        console.log('investorProfile', investorProfile);
+        //const value = toNano(10);
+        //const result = await methodHelper.deposit(value, null);
+        //expectHaveTran(contract, deployer, result, value, true);
+        //const investorProfile = await contract.getInvestorProfile(deployer.address);
+        //console.log('investorProfile.depositIsAvailable', investorProfile.depositIsAvailable);
     });
 
     it('should return profile', async () => {
-        const result = await methodHelper.getInvestorProfile(deployer.address);
-        expect(result).not.toBeNull();
+        //const result = await methodHelper.getInvestorProfile(deployer.address);
+        //expect(result).not.toBeNull();
     });
 
     describe('deposit', () => {
@@ -82,11 +258,11 @@ describe('EarnContract', () => {
         });
 
         it('should increase balance with owner upLine', async () => {
-            await expectHelper.succeedDeposit(null);
+            //await expectHelper.succeedDeposit(null);
         });
 
         it('should increase balance with owner upLine', async () => {
-            await expectHelper.succeedDeposit(null);
+            //await expectHelper.succeedDeposit(null);
         });
     });
 

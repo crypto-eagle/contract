@@ -1,7 +1,7 @@
 import '@ton/test-utils';
 import { Blockchain } from '@ton/sandbox';
 import { EarnContract } from '../../build/EarnContract/tact_EarnContract';
-import { minDeposit } from './consts';
+import { minDeposit, rewardsPercent } from './consts';
 
 export const createEarnContractInstance = async () => {
     const blockchain = await Blockchain.create();
@@ -19,12 +19,14 @@ export const createEarnContractInstance = async () => {
             founderContract.address,
             minDeposit,
             100n,
-            310n,
+            rewardsPercent,
             10n,
             1n
         )
     );
     const deployer = await blockchain.treasury('deployer');
+    const investor = await blockchain.treasury('investor');
+    const upLine = await blockchain.treasury('upLine');
 
     const deployResult = await contract.send(
         deployer.getSender(),
@@ -44,5 +46,5 @@ export const createEarnContractInstance = async () => {
         success: true
     });
 
-    return {contract, deployer, blockchain, founderContract};
+    return {contract, deployer, blockchain, founderContract, investor, upLine};
 };

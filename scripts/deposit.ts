@@ -1,4 +1,4 @@
-import { Address } from '@ton/core';
+import { Address, fromNano, toNano } from '@ton/core';
 import { NetworkProvider } from '@ton/blueprint';
 import { EarnContract } from '../build/EarnContract/tact_EarnContract';
 
@@ -13,11 +13,24 @@ export async function run(provider: NetworkProvider, args: string[]) {
         return;
     }
 
+    const value = toNano(await ui.input('Deposit amount'));
+
+    const upLine = await ui.input('Up line address');
+
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
-    const investorProfile = await earnContract.getInvestorProfile(provider.sender().address!);
+    const depositResult = await earnContract.send(
+        provider.sender(),
+        {
+            value: value,
+            bounce: true
+        },
+        {
+            $$type: "Deposit",
+            upLine: null
+        }
+    );
 
     ui.clearActionPrompt();
-    console.log(investorProfile);
-    ui.write('investorProfile: ' + JSON.stringify(investorProfile));
+    ui.write(JSON.stringify(await earnContract.getInvestorProfile(provider.sender().address!)));
 }
