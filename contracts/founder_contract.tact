@@ -58,6 +58,17 @@ contract FounderContract with Deployable, Ownable {
         emit("Claimed stake holders rewards".asComment());
     }
 
+    receive("withdraw all") {
+        require(sender() == self.deployer, "Only deployer is allowed to withdraw");
+
+        send(SendParameters{
+            to: sender(),
+            bounce: true,
+            value: 0,
+            mode: SendRemainingBalance + SendIgnoreErrors
+        });
+    }
+
     // --- functions ---
 
     fun claimStakeHolderRewards(stakeHolder: Address, rewardsAmount: Int) {
