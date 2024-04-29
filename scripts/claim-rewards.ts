@@ -13,14 +13,12 @@ export async function run(provider: NetworkProvider, args: string[]) {
         return;
     }
 
-    const value = await ui.input('Claim value');
-
     const founderContract = provider.open(FounderContract.fromAddress(address));
 
     const result = await founderContract.send(
         provider.sender(),
         {
-            value: toNano(value),
+            value: toNano(0),
             bounce: true
         },
         {

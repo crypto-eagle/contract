@@ -36,5 +36,4 @@ struct Profile {
     currentClaimedRewards: Int as coins;
     currentClaimableRewards: Int as coins;
     currentMaxRewards: Int as coins;
-    upLine: Address;
 }

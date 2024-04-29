@@ -149,8 +149,7 @@ contract EarnContract with Deployable, Ownable, Functions {
             currentDeposit: investor.round.amount,
             currentClaimedRewards: currentClaimedRewards,
             currentClaimableRewards: currentClaimableRewards,
-            currentMaxRewards: self.calcMaxRewards(investor.round.amount, self.meta),
-            upLine: investor.upLine
+            currentMaxRewards: self.calcMaxRewards(investor.round.amount, self.meta)
         };
     }
 

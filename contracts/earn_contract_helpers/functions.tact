@@ -107,7 +107,7 @@ trait Functions {
                 to: investor.address,
                 bounce: true,
                 value: rewardsAmount,
-                mode: SendPayGasSeparately
+                mode: SendRemainingValue | SendPayGasSeparately
             }
         );
     }
@@ -118,7 +118,7 @@ trait Functions {
                 to: contractMeta.founder,
                 bounce: true,
                 value: bonusAmount,
-                mode: 0
+                mode: SendRemainingValue | SendIgnoreErrors
             }
         );
     }

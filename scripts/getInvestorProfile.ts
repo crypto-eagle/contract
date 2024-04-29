@@ -17,8 +17,9 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const investorProfile = await earnContract.getInvestorProfile(provider.sender().address!);
 
-    ui.clearActionPrompt();
+    // ui.clearActionPrompt();
     if (!investorProfile) {
+        console.log('investorProfile', investorProfile === null);
         throw Error('Profile required');
     }
 

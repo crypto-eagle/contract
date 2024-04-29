@@ -216,16 +216,16 @@ describe('EarnContract', () => {
     });
 
     it('should deposit', async () => {
-        //const value = toNano(10);
-        //const result = await methodHelper.deposit(value, null);
-        //expectHaveTran(contract, deployer, result, value, true);
+        // const value = toNano(10);
+        // const result = await methodHelper.deposit(investor, value, null);
+        // expectHaveTran(contract, deployer, result, value, true);
         //const investorProfile = await contract.getInvestorProfile(deployer.address);
         //console.log('investorProfile.depositIsAvailable', investorProfile.depositIsAvailable);
     });
 
     it('should return profile', async () => {
-        //const result = await methodHelper.getInvestorProfile(deployer.address);
-        //expect(result).not.toBeNull();
+        // const result = await methodHelper.getInvestorProfile(deployer.address);
+        // expect(result).not.toBeNull();
     });
 
     describe('deposit', () => {
