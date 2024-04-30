@@ -13,14 +13,12 @@ export async function run(provider: NetworkProvider, args: string[]) {
         return;
     }
 
-    const value = toNano(await ui.input('Value'));
-
     const earnContract = provider.open(EarnContract.fromAddress(address));
 
     const result = await earnContract.send(
         provider.sender(),
         {
-            value: value,
+            value: toNano(0.05),
             bounce: true
         },
         {

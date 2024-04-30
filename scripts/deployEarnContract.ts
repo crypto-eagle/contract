@@ -7,7 +7,7 @@ export async function deployEarn(provider: NetworkProvider, founder: Address) {
 
     const contractId = BigInt(Math.floor(Math.random() * 10000));
     // TODO: Fill constants
-    const minDeposit = toNano('1.0');
+    const minDeposit = toNano('10.0');
     const maxDepositMultiplier = 100n;
     const rewardsPercent = 310n;
     const depositDirectUpLineBonusPercent = 10n;
@@ -38,11 +38,8 @@ export async function deployEarn(provider: NetworkProvider, founder: Address) {
 
     await provider.waitForDeploy(earnContract.address);
 
-    earnContract.getMinDepositAmount(founder);
-
     ui.write('owner: ' + await earnContract.getOwner());
-    ui.write('min deposit: ' + await earnContract.getMinDepositAmount(founder));
-    ui.write('max deposit: ' + await earnContract.getMaxDepositAmount(founder));
+    ui.write('min/max deposit: ' + JSON.stringify(await earnContract.getDepositConstraints(founder)));
     ui.write('profile: ' + JSON.stringify(await earnContract.getInvestorProfile(founder)));
 }
 

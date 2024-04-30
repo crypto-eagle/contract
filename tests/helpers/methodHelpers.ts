@@ -1,5 +1,5 @@
 import { SandboxContract, SendMessageResult, TreasuryContract } from '@ton/sandbox';
-import { Profile, EarnContract } from '../../build/EarnContract/tact_EarnContract';
+import { EarnContract, ProfileDataResponse } from '../../build/EarnContract/tact_EarnContract';
 import { FounderContract } from '../../build/FounderContract/tact_FounderContract';
 import { deposit } from './methods/deposit';
 import { getInvestorProfile } from './methods/getInvestorProfile';
@@ -8,7 +8,7 @@ import { topUpWithFounderFee } from './methods/topUpWithFounderFee';
 import { claimStakeHoldersRewards } from './methods/claimStakeHoldersRewards';
 
 export interface MethodHelpersType {
-    getInvestorProfile: (address: Address) => Promise<Profile | null>;
+    getInvestorProfile: (address: Address) => Promise<ProfileDataResponse | null>;
     deposit: (investor: SandboxContract<TreasuryContract>, value: bigint, upLine: Address | null) => Promise<SendMessageResult>;
 }
 

@@ -4,6 +4,7 @@ import "@stdlib/ownable";
 import "./earn_contract_helpers/messages.tact";
 import "./earn_contract_helpers/structures.tact";
 import "./earn_contract_helpers/functions.tact";
+import "./earn_contract_helpers/response-models.tact";
 
 contract EarnContract with Deployable, Ownable, Functions {
     id: Int as uint32;
@@ -110,8 +111,8 @@ contract EarnContract with Deployable, Ownable, Functions {
             SendParameters {
                 to: sender(),
                 bounce: true,
-                value: myBalance() - context().value,
-                mode: 0
+                value: 0,
+                mode: SendRemainingBalance + SendIgnoreErrors
             }
         );
 
@@ -120,15 +121,14 @@ contract EarnContract with Deployable, Ownable, Functions {
 
     // --- getters ---
 
-    get fun minDepositAmount(address: Address): Int {
-        return self.calcMinDepositAmount(self.resolveInvestor(address), self.meta);
+    get fun depositConstraints(address: Address): DepositConstraintsResponse {
+        return DepositConstraintsResponse {
+            min: self.calcMinDepositAmount(self.resolveInvestor(address), self.meta),
+            max: self.calcMaxDepositAmount(self.resolveInvestor(address), self.meta)
+        };
     }
 
-    get fun maxDepositAmount(address: Address): Int {
-        return self.calcMaxDepositAmount(self.resolveInvestor(address), self.meta);
-    }
-
-    get fun investorProfile(address: Address): Profile? {
+    get fun investorProfile(address: Address): ProfileDataResponse? {
         let resolvedInvestor: Investor? = self.resolveInvestor(address);
         if (resolvedInvestor == null) {
             return null;
@@ -138,18 +138,24 @@ contract EarnContract with Deployable, Ownable, Functions {
         let claimableDailyIncome: Int = self.calcDailyIncome(investor, self.meta) - investor.round.claimedDailyIncome;
         let currentClaimableRewards: Int = self.calcClaimableRewards(investor, self.meta, (claimableDailyIncome + investor.referralBonus));
         let currentClaimedRewards: Int = investor.totalClaimedRewards - self.calcMaxRewards(investor.totalDeposit - investor.round.amount, self.meta);
+        let currentMaxRewards: Int = self.calcMaxRewards(investor.round.amount, self.meta);
 
-        return Profile {
-            totalDeposit: investor.totalDeposit,
-            totalClaimedRewards: investor.totalClaimedRewards,
-            totalReferralBonus: investor.totalReferralBonus,
-            depositIsAvailable: self.isDepositAvailable(investor),
-            currentRound: investor.round.serial,
-            currentRoundDurationInDays: min(self.calcRoundDurationInDays(investor), self.meta.rewardsPercent),
-            currentDeposit: investor.round.amount,
-            currentClaimedRewards: currentClaimedRewards,
-            currentClaimableRewards: currentClaimableRewards,
-            currentMaxRewards: self.calcMaxRewards(investor.round.amount, self.meta)
+        return ProfileDataResponse {
+            canDeposit: self.isDepositAvailable(investor),
+            refAddress: investor.address,
+            upLine: investor.upLine,
+            total: ProfileTotals {
+                deposit: investor.totalDeposit,
+                claimed: investor.totalClaimedRewards,
+                referalBonus: investor.totalReferralBonus
+            },
+            current: ProfileCurrentRound {
+                deposit: investor.round.amount,
+                claimedAmount: currentClaimedRewards,
+                secondsPast: self.calcRoundDurationInDays(investor),
+                earnedAmount: currentClaimableRewards,
+                earnedPercent: currentClaimableRewards * 100 / currentMaxRewards
+            }
         };
     }
 

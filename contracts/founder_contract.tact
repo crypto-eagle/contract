@@ -77,7 +77,7 @@ contract FounderContract with Deployable, Ownable {
                 to: stakeHolder,
                 bounce: true,
                 value: rewardsAmount,
-                mode: SendRemainingValue | SendPayGasSeparately
+                mode: SendRemainingValue + SendIgnoreErrors
             }
         );
     }

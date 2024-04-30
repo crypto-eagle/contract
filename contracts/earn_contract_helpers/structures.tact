@@ -24,16 +24,3 @@ struct Investor {
     totalClaimedRewards: Int as coins;
     totalReferralBonus: Int as coins;
 }
-
-struct Profile {
-    totalDeposit: Int as coins;
-    totalClaimedRewards: Int as coins;
-    totalReferralBonus: Int as coins;
-    depositIsAvailable: Bool;
-    currentRound: Int as uint8;
-    currentRoundDurationInDays: Int as uint8;
-    currentDeposit: Int as coins;
-    currentClaimedRewards: Int as coins;
-    currentClaimableRewards: Int as coins;
-    currentMaxRewards: Int as coins;
-}
