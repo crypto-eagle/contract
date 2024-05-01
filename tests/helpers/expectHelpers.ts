@@ -1,5 +1,5 @@
 import { SandboxContract, SendMessageResult, TreasuryContract } from '@ton/sandbox';
-import { Profile, EarnContract } from '../../build/EarnContract/tact_EarnContract';
+import { ProfileDataResponse, EarnContract } from '../../build/EarnContract/tact_EarnContract';
 import { FounderContract } from "../../build/FounderContract/tact_FounderContract";
 import { expectHaveTran } from './expectations/expectHaveTran';
 import { expectHaveOnlyOneEvent, expectNotHaveEvents, expectHaveFailEvents } from './expectations/expectHaveEvent';
@@ -15,7 +15,7 @@ export interface ExpectHelpersType {
     haveOnlyOneEvent: (result: SendMessageResult, value: bigint) => void;
     notHaveEvents: (result: SendMessageResult) => void;
     haveFailEvents: (result: SendMessageResult) => void;
-    succeedDeposit: (upLine: Address | null) => Promise<Profile | null>;
+    succeedDeposit: (upLine: Address | null) => Promise<ProfileDataResponse | null>;
 }
 
 export interface FounderContractExpectHelpersType {

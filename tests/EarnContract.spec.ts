@@ -89,6 +89,17 @@ describe('EarnContract', () => {
             async ({ value, upLineInit }) => {
                 const result = await methodHelper.deposit(investor, value, upLineInit());
 
+                const date = new Date();
+                date.setDate(date.getDate() + 2);
+                console.log('date', date);
+                jest
+                    .useFakeTimers()
+                    .setSystemTime(date);
+
+                const profile = await methodHelper.getInvestorProfile(investor.address);
+
+                console.log('profile', profile);
+
                 expectHaveTran(contract, investor, result, value, true);
             }
         );
@@ -187,12 +198,12 @@ describe('EarnContract', () => {
     });
 
     it('should withdraw', async () => {
-        await methodHelper.deposit(investor, toNano('10'), null);
+        await methodHelper.deposit(investor, toNano('100'), null);
 
         console.log('deployer before', fromNano(await deployer.getBalance()));
         console.log('contract before', fromNano(await contract.getBalance()));
 
-        const result = await contract.send(
+        await contract.send(
             deployer.getSender(),
             {
                 value: toNano('0.1'),
@@ -203,11 +214,11 @@ describe('EarnContract', () => {
             }
         );
 
+        const contractBalance = await contract.getBalance();
         console.log('deployer after', fromNano(await deployer.getBalance()));
         console.log('contract after', fromNano(await contract.getBalance()));
-        console.log('result', result);
 
-
+        expect(contractBalance).toBeLessThan(toNano(0.1));
     });
 
     it('should return min deposit', async () => {

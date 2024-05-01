@@ -18,7 +18,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
     const result = await earnContract.send(
         provider.sender(),
         {
-            value: toNano(0.05),
+            value: toNano(0.1),
             bounce: true
         },
         {

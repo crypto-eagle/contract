@@ -111,8 +111,8 @@ contract EarnContract with Deployable, Ownable, Functions {
             SendParameters {
                 to: sender(),
                 bounce: true,
-                value: 0,
-                mode: SendRemainingBalance + SendIgnoreErrors
+                value: myBalance() - context().value,
+                mode: 0
             }
         );
 
@@ -152,7 +152,7 @@ contract EarnContract with Deployable, Ownable, Functions {
             current: ProfileCurrentRound {
                 deposit: investor.round.amount,
                 claimedAmount: currentClaimedRewards,
-                secondsPast: self.calcRoundDurationInDays(investor),
+                secondsPast: now() - investor.round.createdAt,
                 earnedAmount: currentClaimableRewards,
                 earnedPercent: currentClaimableRewards * 100 / currentMaxRewards
             }

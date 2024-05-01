@@ -1,12 +1,8 @@
 import { SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Profile, EarnContract } from '../../../build/EarnContract/tact_EarnContract';
+import { ProfileDataResponse, EarnContract } from '../../../build/EarnContract/tact_EarnContract';
 import { Address } from '@ton/core';
-import { methodHelpers } from '../methodHelpers';
-import { expectHaveTran } from './expectHaveTran';
-import { expectHaveOnlyOneEvent } from './expectHaveEvent';
-import { minDeposit } from '../consts';
 
-export const expectSucceedDeposit = async (contract: SandboxContract<EarnContract>, deployer: SandboxContract<TreasuryContract>, upLine: Address | null): Promise<Profile | null> => {
+export const expectSucceedDeposit = async (contract: SandboxContract<EarnContract>, deployer: SandboxContract<TreasuryContract>, upLine: Address | null): Promise<ProfileDataResponse | null> => {
     /*const helper = methodHelpers(contract, deployer);
 
     const value = minDeposit;
