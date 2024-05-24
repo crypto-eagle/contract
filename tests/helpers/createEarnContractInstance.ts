@@ -1,7 +1,9 @@
 import '@ton/test-utils';
 import { Blockchain } from '@ton/sandbox';
 import { EarnContract } from '../../build/EarnContract/tact_EarnContract';
-import { minDeposit, rewardsPercent } from './consts';
+import { maxDepositMultiplier, minDeposit, rewardsPercent } from './consts';
+import { toNano } from '@ton/core';
+import { createFounderContractInstance } from './createFounderContractInstance';
 
 export const createEarnContractInstance = async () => {
     const blockchain = await Blockchain.create();
@@ -12,13 +14,14 @@ export const createEarnContractInstance = async () => {
     //     debugLogs: true,
     // };
 
-    const founderContract = await blockchain.treasury('founder');
+    const founderContract = await createFounderContractInstance();
+
     const contract = blockchain.openContract(
         await EarnContract.fromInit(
             BigInt(Math.floor(Math.random() * 10000)),
-            founderContract.address,
+            founderContract.contract.address,
             minDeposit,
-            100n,
+            maxDepositMultiplier,
             rewardsPercent,
             10n,
             1n
@@ -31,7 +34,7 @@ export const createEarnContractInstance = async () => {
     const deployResult = await contract.send(
         deployer.getSender(),
         {
-            value: minDeposit
+            value: toNano('0.05')
         },
         {
             $$type: 'Deploy',
