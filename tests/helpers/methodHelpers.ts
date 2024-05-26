@@ -10,7 +10,7 @@ import { getDepositConstraints } from './methods/getDepositConstraints';
 import { claimRewards } from './methods/claimRewards';
 
 export interface MethodHelpersType {
-    getDepositConstraints: (address: Address) => Promise<{ min: BigInt, max: BigInt }>;
+    getDepositConstraints: (address: Address) => Promise<{ min: bigint, max: bigint }>;
     getInvestorProfile: (address: Address) => Promise<ProfileDataResponse | null>;
     deposit: (investor: SandboxContract<TreasuryContract>, value: bigint, upLine: Address | null) => Promise<SendMessageResult>;
     claimRewards: (investor: SandboxContract<TreasuryContract>) => Promise<SendMessageResult>;

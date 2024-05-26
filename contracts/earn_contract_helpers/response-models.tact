@@ -22,5 +22,5 @@ struct ProfileDataResponse {
     refAddress: Address;
     upLine: Address;
     total: ProfileTotals;
-    current: ProfileCurrentRound;
+    current: ProfileCurrentRound?;
 }

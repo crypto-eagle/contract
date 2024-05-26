@@ -10,7 +10,6 @@ import {
 } from './helpers';
 import { maxDepositMultiplier, minDeposit } from './helpers/consts';
 import { FounderContract } from '../build/FounderContract/tact_FounderContract';
-import { toNano } from '@ton/core';
 
 async function hasMaxDepositAndSameMinDepositAfterFirstDeposit(methodHelper: MethodHelpersType, userWallet: SandboxContract<TreasuryContract>) {
     const result = await methodHelper.getDepositConstraints(userWallet.address);
@@ -99,11 +98,12 @@ describe('EarnContract', () => {
             expect(profile.total.claimed).toBe(0n);
             expect(profile.total.referalBonus).toBe(0n);
 
-            expect(profile.current.deposit).toBe(minDeposit);
-            expect(profile.current.claimedAmount).toBe(0n);
-            expect(profile.current.secondsPast).toBeLessThan(100n);
-            expect(profile.current.earnedAmount).toBe(0n);
-            expect(profile.current.earnedPercent).toBe(0n);
+            expect(profile.current).not.toBeNull();
+            expect(profile.current!.deposit).toBe(minDeposit);
+            expect(profile.current!.claimedAmount).toBe(0n);
+            expect(profile.current!.secondsPast).toBeLessThan(100n);
+            expect(profile.current!.earnedAmount).toBe(0n);
+            expect(profile.current!.earnedPercent).toBe(0n);
 
             const founderBalance = await founderContract.getBalance();
             expect(founderBalance).toBe(0n);
@@ -113,18 +113,20 @@ describe('EarnContract', () => {
             const profileBefore = (await methodHelper.getInvestorProfile(userWallet.address))!;
             expect(profileBefore).not.toBeNull();
             expect(profileBefore.total.deposit).toBe(minDeposit);
-            expect(profileBefore.current.deposit).toBe(minDeposit);
+            expect(profileBefore.current).not.toBeNull();
+            expect(profileBefore.current!.deposit).toBe(minDeposit);
 
             await methodHelper.claimRewards(userWallet);
 
             const profileAfter = (await methodHelper.getInvestorProfile(userWallet.address))!;
             expect(profileAfter).not.toBeNull();
             expect(profileAfter.total.deposit).toBe(minDeposit);
-            expect(profileAfter.current.deposit).toBe(minDeposit);
+            expect(profileAfter.current).not.toBeNull();
+            expect(profileAfter.current!.deposit).toBe(minDeposit);
         });
     });
 
-    describe('First deposit no upLine and after 400 days', () => {
+    describe('First deposit no upLine and after 310 days', () => {
         let userWallet: SandboxContract<TreasuryContract>;
 
         beforeEach(async () => {
@@ -133,7 +135,7 @@ describe('EarnContract', () => {
 
 
             let nowDate = new Date();
-            nowDate.setDate(nowDate.getDate() + 400);
+            nowDate.setDate(nowDate.getDate() + 310);
             jest.useFakeTimers().setSystemTime(nowDate.getTime());
         });
 
@@ -155,14 +157,15 @@ describe('EarnContract', () => {
             expect(profile.total.claimed).toBe(0n);
             expect(profile.total.referalBonus).toBe(0n);
 
-            const secondsPast = BigInt(400 * 24 * 60 * 60);
+            const secondsPast = BigInt(310 * 24 * 60 * 60);
             const earnedAmount = BigInt(Number(minDeposit) * 3.1);
 
-            expect(profile.current.deposit).toBe(minDeposit);
-            expect(profile.current.claimedAmount).toBe(0n);
-            expect(profile.current.secondsPast).toBe(secondsPast);
-            expect(profile.current.earnedAmount).toBe(BigInt(earnedAmount));
-            expect(profile.current.earnedPercent).toBe(100n);
+            expect(profile.current).not.toBeNull();
+            expect(profile.current!.deposit).toBe(minDeposit);
+            expect(profile.current!.claimedAmount).toBe(0n);
+            expect(profile.current!.secondsPast).toBe(secondsPast);
+            expect(profile.current!.earnedAmount).toBe(BigInt(earnedAmount));
+            expect(profile.current!.earnedPercent).toBe(100n);
 
             const founderBalance = await founderContract.getBalance();
             expect(founderBalance).toBe(0n);
@@ -171,6 +174,8 @@ describe('EarnContract', () => {
         it('can claim rewards', async () => {
             const profileBefore = (await methodHelper.getInvestorProfile(userWallet.address))!;
             expect(profileBefore).not.toBeNull();
+            expect(profileBefore.canDeposit).toBeFalsy();
+            expect(profileBefore.current).not.toBeNull();
 
             await methodHelper.claimRewards(userWallet);
 
@@ -181,14 +186,95 @@ describe('EarnContract', () => {
 
             const earnedAmount = BigInt(Number(minDeposit) * 3.1);
             expect(profileAfter.total.deposit).toBe(minDeposit);
-            expect(profileAfter.total.claimed).toBe(minDeposit);
+            expect(profileAfter.total.claimed).toBe(earnedAmount);
             expect(profileAfter.total.referalBonus).toBe(0n);
 
-            expect(profileAfter.current.deposit).toBe(minDeposit);
+            expect(profileAfter.current).toBeNull();
+        });
+    });
 
-            expect(profileAfter.current.claimedAmount).toBe(earnedAmount);
-            expect(profileBefore.total.claimed).toBe(earnedAmount);
-            console.log(profileAfter);
+    describe('2 deposit rounds', () => {
+        let userWallet: SandboxContract<TreasuryContract>;
+
+        beforeEach(async () => {
+            userWallet = await blockchain.treasury('userWallet');
+            await methodHelper.deposit(userWallet, minDeposit * 2n, null);
+
+
+            let nowDate = new Date();
+            nowDate.setDate(nowDate.getDate() + 310);
+            jest.useFakeTimers().setSystemTime(nowDate.getTime());
+
+            await methodHelper.claimRewards(userWallet);
+            await methodHelper.deposit(userWallet, minDeposit * 4n, null);
+
+            nowDate = new Date();
+            nowDate.setDate(nowDate.getDate() + 310);
+            jest.useFakeTimers().setSystemTime(nowDate.getTime());
+
+            await methodHelper.claimRewards(userWallet);
+        });
+
+        it('has extended max/min deposit', async () => {
+            const result = await methodHelper.getDepositConstraints(userWallet.address);
+            expect(result).not.toBeNull();
+
+            console.log('result', result);
+
+            const min = minDeposit * 4n;
+            expect(result.min).toEqual(min);
+
+            const max = minDeposit * maxDepositMultiplier * 9n;
+            expect(result.max).toEqual(max);
+        });
+
+        it('has proper investorProfile', async () => {
+            const result = await methodHelper.getInvestorProfile(userWallet.address);
+            expect(result).not.toBeNull();
+
+            const profile = result!;
+
+            expect(profile.canDeposit).toBeFalsy();
+            expect(profile.refAddress.toString()).toBe(userWallet.address.toString());
+            expect(profile.upLine.toString()).toBe(founderContract.address.toString());
+
+            expect(profile.total.deposit).toBe(minDeposit);
+            expect(profile.total.claimed).toBe(0n);
+            expect(profile.total.referalBonus).toBe(0n);
+
+            const secondsPast = BigInt(310 * 24 * 60 * 60);
+            const earnedAmount = BigInt(Number(minDeposit) * 3.1);
+
+            expect(profile.current).not.toBeNull();
+            expect(profile.current!.deposit).toBe(minDeposit);
+            expect(profile.current!.claimedAmount).toBe(0n);
+            expect(profile.current!.secondsPast).toBe(secondsPast);
+            expect(profile.current!.earnedAmount).toBe(BigInt(earnedAmount));
+            expect(profile.current!.earnedPercent).toBe(100n);
+
+            const founderBalance = await founderContract.getBalance();
+            expect(founderBalance).toBe(0n);
+        });
+
+        it('can claim rewards', async () => {
+            const profileBefore = (await methodHelper.getInvestorProfile(userWallet.address))!;
+            expect(profileBefore).not.toBeNull();
+            expect(profileBefore.canDeposit).toBeFalsy();
+            expect(profileBefore.current).not.toBeNull();
+
+            await methodHelper.claimRewards(userWallet);
+
+            const profileAfter = (await methodHelper.getInvestorProfile(userWallet.address))!;
+            expect(profileAfter).not.toBeNull();
+
+            expect(profileAfter.canDeposit).toBeTruthy();
+
+            const earnedAmount = BigInt(Number(minDeposit) * 3.1);
+            expect(profileAfter.total.deposit).toBe(minDeposit);
+            expect(profileAfter.total.claimed).toBe(earnedAmount);
+            expect(profileAfter.total.referalBonus).toBe(0n);
+
+            expect(profileAfter.current).toBeNull();
         });
     });
 

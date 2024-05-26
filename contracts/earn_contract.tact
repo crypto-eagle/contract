@@ -140,7 +140,7 @@ contract EarnContract with Deployable, Ownable, Functions {
         let currentClaimedRewards: Int = investor.totalClaimedRewards - self.calcMaxRewards(investor.totalDeposit - investor.round.amount, self.meta);
         let currentMaxRewards: Int = self.calcMaxRewards(investor.round.amount, self.meta);
 
-        return ProfileDataResponse {
+        let profile: ProfileDataResponse = ProfileDataResponse {
             canDeposit: self.isDepositAvailable(investor),
             refAddress: investor.address,
             upLine: investor.upLine,
@@ -157,6 +157,12 @@ contract EarnContract with Deployable, Ownable, Functions {
                 earnedPercent: currentClaimableRewards * 100 / currentMaxRewards
             }
         };
+
+        if (investor.round.isClaimed) {
+            profile.current = null;
+        }
+
+        return profile;
     }
 
     get fun balance(): Int {
