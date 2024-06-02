@@ -2,6 +2,6 @@ message TemporaryWithdrawFeature {
 
 }
 
-message TemporarySetDepositDate {
+message TemporarySetRoundDateBack {
     daysBack: Int;
 }

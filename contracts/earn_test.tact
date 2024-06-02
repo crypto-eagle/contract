@@ -61,9 +61,18 @@ contract EarnTest with Ernable {
         emit("Temporary withdraw feature".asComment());
     }
 
-    receive(msg: TemporarySetDepositDate) {
+    receive(msg: TemporarySetRoundDateBack) {
+        let address: Address = sender();
+        let daysBack: Int = msg.daysBack * 60 * 60 * 24;
 
+        let investorOpr: Investor? = self.resolveInvestor(address);
+        require(investorOpr != null, "Investor not found");
 
-        emit("Temporary set date".asComment());
+        let investor: Investor = investorOpr!!;
+        investor.round.createdAt = investor.round.createdAt - daysBack;
+
+        self.investors.set(address, investor);
+
+        emit("Temporary date set".asComment());
     }
 }
