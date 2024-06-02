@@ -5,8 +5,3 @@ message Deposit {
 message ClaimRewards {
 
 }
-
-// TODO: Remove before deploy
-message TemporaryWithdrawFeature {
-
-}

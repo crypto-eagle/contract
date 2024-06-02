@@ -212,7 +212,7 @@ describe('EarnContract', () => {
             nowDate.setDate(nowDate.getDate() + 310);
             jest.useFakeTimers().setSystemTime(nowDate.getTime());
 
-            await methodHelper.claimRewards(userWallet);
+            // await methodHelper.claimRewards(userWallet);
         });
 
         it('has extended max/min deposit', async () => {

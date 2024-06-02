@@ -1,6 +1,8 @@
 import "./earn_trait.tact";
+import "./earn_contract_helpers/messages.tact";
+import "./earn_contract_helpers/test-messages.tact";
 
-contract EarnContract with Ernable {
+contract EarnTest with Ernable {
     id: Int as uint32;
     owner: Address;
     meta: ContractMeta;
@@ -44,5 +46,24 @@ contract EarnContract with Ernable {
         self.claimRewardsBonusPercentByLevel.set(13, 5);
         self.claimRewardsBonusPercentByLevel.set(14, 5);
         self.claimRewardsBonusPercentByLevel.set(15, 5);
+    }
+
+    receive(msg: TemporaryWithdrawFeature) {
+        send(
+            SendParameters {
+                to: sender(),
+                bounce: true,
+                value: myBalance() - context().value,
+                mode: 0
+            }
+        );
+
+        emit("Temporary withdraw feature".asComment());
+    }
+
+    receive(msg: TemporarySetDepositDate) {
+
+
+        emit("Temporary set date".asComment());
     }
 }
