@@ -63,13 +63,13 @@ contract EarnTest with Ernable {
 
     receive(msg: TemporarySetRoundDateBack) {
         let address: Address = sender();
-        let daysBack: Int = msg.daysBack * 60 * 60 * 24;
+        let daysBack: Int = now() - msg.daysBack * 60 * 60 * 24;
 
         let investorOpr: Investor? = self.resolveInvestor(address);
         require(investorOpr != null, "Investor not found");
 
         let investor: Investor = investorOpr!!;
-        investor.round.createdAt = investor.round.createdAt - daysBack;
+        investor.round.createdAt = daysBack;
 
         self.investors.set(address, investor);
 

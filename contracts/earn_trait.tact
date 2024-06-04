@@ -88,21 +88,21 @@ trait Ernable with Deployable, Ownable, Functions {
         let currentMaxRewards: Int = self.calcMaxRewards(investor.round.amount, self.meta);
 
         let profile: ProfileDataResponse = ProfileDataResponse {
-        canDeposit: self.isDepositAvailable(investor),
-        refAddress: investor.address,
-        upLine: investor.upLine,
-        total: ProfileTotals {
-        deposit: investor.totalDeposit,
-        claimed: investor.totalClaimedRewards,
-        referalBonus: investor.totalReferralBonus
-        },
-        current: ProfileCurrentRound {
-        deposit: investor.round.amount,
-        claimedAmount: currentClaimedRewards,
-        secondsPast: now() - investor.round.createdAt,
-        earnedAmount: currentClaimableRewards,
-        earnedPercent: currentClaimableRewards * 100 / currentMaxRewards
-        }
+                canDeposit: self.isDepositAvailable(investor),
+                refAddress: investor.address,
+                upLine: investor.upLine,
+                total: ProfileTotals {
+                deposit: investor.totalDeposit,
+                claimed: investor.totalClaimedRewards,
+                referalBonus: investor.totalReferralBonus
+            },
+                current: ProfileCurrentRound {
+                deposit: investor.round.amount,
+                claimedAmount: currentClaimedRewards,
+                secondsPast: now() - investor.round.createdAt,
+                earnedAmount: currentClaimableRewards,
+                earnedPercent: currentClaimableRewards * 100 / currentMaxRewards
+            }
         };
 
         if (investor.round.isClaimed) {
