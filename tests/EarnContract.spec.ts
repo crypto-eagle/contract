@@ -238,15 +238,15 @@ describe('EarnContract', () => {
             expect(profile.refAddress.toString()).toBe(userWallet.address.toString());
             expect(profile.upLine.toString()).toBe(founderContract.address.toString());
 
-            expect(profile.total.deposit).toBe(minDeposit);
-            expect(profile.total.claimed).toBe(0n);
+            expect(profile.total.deposit).toBe(minDeposit * 6n);
+            expect(profile.total.claimed).toBe(minDeposit * 2n * 31n / 10n);
             expect(profile.total.referalBonus).toBe(0n);
 
             const secondsPast = BigInt(310 * 24 * 60 * 60);
-            const earnedAmount = BigInt(Number(minDeposit) * 3.1);
+            const earnedAmount = BigInt(Number(minDeposit * 4n) * 3.1);
 
             expect(profile.current).not.toBeNull();
-            expect(profile.current!.deposit).toBe(minDeposit);
+            expect(profile.current!.deposit).toBe(minDeposit * 4n);
             expect(profile.current!.claimedAmount).toBe(0n);
             expect(profile.current!.secondsPast).toBe(secondsPast);
             expect(profile.current!.earnedAmount).toBe(BigInt(earnedAmount));
@@ -269,9 +269,9 @@ describe('EarnContract', () => {
 
             expect(profileAfter.canDeposit).toBeTruthy();
 
-            const earnedAmount = BigInt(Number(minDeposit) * 3.1);
-            expect(profileAfter.total.deposit).toBe(minDeposit);
-            expect(profileAfter.total.claimed).toBe(earnedAmount);
+            const totalEarnedAmount = BigInt(Number(minDeposit * 6n) * 3.1);
+            expect(profileAfter.total.deposit).toBe(minDeposit * 6n);
+            expect(profileAfter.total.claimed).toBe(totalEarnedAmount);
             expect(profileAfter.total.referalBonus).toBe(0n);
 
             expect(profileAfter.current).toBeNull();
