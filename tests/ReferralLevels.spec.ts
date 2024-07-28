@@ -43,6 +43,7 @@ describe('referral system', () => {
         expect(profileAfter.total.referalBonus).toBe(depositBonus);
         expect(profileAfter.current!.earnedAmount).toBe(depositBonus);
         expect(profileAfter.current!.earnedPercent).toBe(depositBonusPercent);
+        expect(profileAfter.refCount).toBe(1n);
 
         let nowDate = new Date();
         nowDate.setDate(nowDate.getDate() + 310);

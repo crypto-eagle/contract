@@ -32,11 +32,25 @@ trait Ernable with Deployable, Ownable, Functions {
         investor.round = self.createRound(investor.round.serial + 1, depositAmount, now(), false);
         investor.totalDeposit = investor.totalDeposit + depositAmount;
         self.investors.set(investor.address, investor);
+        self.addRefferal(investor.upLine, investor.address);
 
         self.enrollUpLineDepositBonus(investor, self.investors.get(investor.upLine));
         self.enrollFounderDepositBonus(investor, self.meta);
 
         emit("Deposited".asComment());
+    }
+
+    fun addRefferal(investorAddress: Address, referee: Address) {
+        let investorResolved: Investor? = self.resolveInvestor(investorAddress);
+
+        if (investorResolved == null) {
+            return;
+        }
+
+        let investor: Investor = investorResolved!!;
+        investor.referrals.set(investor.referralCount, referee);
+        investor.referralCount = investor.referralCount + 1;
+        self.investors.set(investorAddress, investor);
     }
 
     receive(msg: ClaimRewards) {
@@ -88,15 +102,16 @@ trait Ernable with Deployable, Ownable, Functions {
         let currentMaxRewards: Int = self.calcMaxRewards(investor.round.amount, self.meta);
 
         let profile: ProfileDataResponse = ProfileDataResponse {
-                canDeposit: self.isDepositAvailable(investor),
-                refAddress: investor.address,
-                upLine: investor.upLine,
-                total: ProfileTotals {
+        canDeposit: self.isDepositAvailable(investor),
+        refAddress: investor.address,
+        refCount: investor.referralCount,
+        upLine: investor.upLine,
+        total: ProfileTotals {
                 deposit: investor.totalDeposit,
                 claimed: investor.totalClaimedRewards,
                 referalBonus: investor.totalReferralBonus
             },
-                current: ProfileCurrentRound {
+        current: ProfileCurrentRound {
                 deposit: investor.round.amount,
                 claimedAmount: currentClaimedRewards,
                 secondsPast: now() - investor.round.createdAt,

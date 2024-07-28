@@ -20,6 +20,8 @@ struct Investor {
     upLine: Address;
     round: Round;
     referralBonus: Int as coins;
+    referralCount: Int as uint8;
+    referrals: map<Int, Address>;
     totalDeposit: Int as coins;
     totalClaimedRewards: Int as coins;
     totalReferralBonus: Int as coins;

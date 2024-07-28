@@ -20,6 +20,7 @@ struct ProfileCurrentRound {
 struct ProfileDataResponse {
     canDeposit: Bool;
     refAddress: Address;
+    refCount: Int as uint8;
     upLine: Address;
     total: ProfileTotals;
     current: ProfileCurrentRound?;

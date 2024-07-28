@@ -16,6 +16,8 @@ trait Functions {
             upLine: upLine,
             round: self.createRound(0, 0, now(), true),
             referralBonus: 0,
+            referralCount: 0,
+            referrals: emptyMap(),
             totalDeposit: 0,
             totalClaimedRewards: 0,
             totalReferralBonus: 0
